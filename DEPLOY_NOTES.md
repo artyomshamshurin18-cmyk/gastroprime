@@ -15,6 +15,12 @@ Loose files in `/root/*.ts` are also stale manual copies and should not be used 
 ## Goal
 Keep future production edits inside `backend/` and `frontend/`, then rebuild/redeploy from there.
 
+## Deploy command
+Run from the server:
+- `/root/gastroprime/scripts/deploy-prod.sh`
+
+This pulls `origin/main`, rebuilds backend and frontend, syncs frontend files to `/var/www/gastroprime`, restarts `gastro-api`, and saves the PM2 process list.
+
 ## Archived legacy files
 On 2026-04-18, the legacy top-level app copy and stale loose TypeScript files were moved to:
 - `/root/_gastroprime_legacy_archive_20260418-235157`
