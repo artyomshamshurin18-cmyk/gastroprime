@@ -109,9 +109,9 @@ export default function Home() {
           title="Сайт должен продавать не только вкус, но и управляемость"
           description="Вот почему в новой версии мы закладываем отдельные блоки под качество, логистику, кейсы, цифры и будущую цифровую связку с вашим кабинетом."
         />
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h3 className="text-2xl font-semibold tracking-tight text-slate-950">Что обязательно усилить по сравнению с Tilda</h3>
+          <div className="mt-10 grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+            <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+              <h3 className="text-2xl font-semibold tracking-tight text-slate-950">Что обязательно усилить по сравнению с Tilda</h3>
             <ul className="mt-6 grid gap-4 text-sm leading-7 text-slate-600">
               <li>• кейсы с конкретными цифрами и типами объектов;</li>
               <li>• отдельную страницу про качество, HACCP, Меркурий и процессы;</li>
@@ -127,6 +127,9 @@ export default function Home() {
                 <p className="mt-3 text-sm leading-7 text-slate-700">{item.outcome}</p>
               </div>
             ))}
+            <Link href="/cases" className="rounded-3xl border border-slate-200 bg-white p-6 text-sm font-medium text-slate-950 shadow-sm transition hover:border-emerald-300 hover:text-emerald-700">
+              Открыть раздел кейсов →
+            </Link>
           </div>
         </div>
       </section>

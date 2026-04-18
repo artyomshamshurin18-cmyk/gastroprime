@@ -40,6 +40,8 @@ export const navigation = [
   { href: "/warehouses", label: "Склады" },
   { href: "/production", label: "Производства" },
   { href: "/government", label: "Госучреждения" },
+  { href: "/quality", label: "Качество" },
+  { href: "/cases", label: "Кейсы" },
   { href: "/about", label: "О компании" },
   { href: "/contacts", label: "Контакты" },
 ];
