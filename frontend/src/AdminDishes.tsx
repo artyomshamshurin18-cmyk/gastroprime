@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
@@ -69,6 +69,20 @@ interface ImportPreview {
   rows: ImportPreviewRow[]
 }
 
+type BulkBooleanMode = 'keep' | 'true' | 'false'
+
+interface BulkEditForm {
+  price: string
+  calories: string
+  weight: string
+  measureUnit: string
+  categoryId: string
+  breakfastPart: '__keep__' | '' | 'MAIN' | 'SIDE'
+  containsPork: BulkBooleanMode
+  containsGarlic: BulkBooleanMode
+  containsMayonnaise: BulkBooleanMode
+}
+
 const emptyDishForm: DishDraft = {
   name: '',
   description: '',
@@ -86,6 +100,18 @@ const emptyDishForm: DishDraft = {
 const displayNumber = (value: number) => value === 0 ? '' : String(value)
 const parseNumber = (value: string) => value === '' ? 0 : parseInt(value, 10) || 0
 
+const emptyBulkForm: BulkEditForm = {
+  price: '',
+  calories: '',
+  weight: '',
+  measureUnit: '',
+  categoryId: '',
+  breakfastPart: '__keep__',
+  containsPork: 'keep',
+  containsGarlic: 'keep',
+  containsMayonnaise: 'keep',
+}
+
 export default function AdminDishes({ token }: { token: string }) {
   const [dishes, setDishes] = useState<Dish[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -100,6 +126,13 @@ export default function AdminDishes({ token }: { token: string }) {
   const [commitLoading, setCommitLoading] = useState(false)
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const [uploadingPhotoId, setUploadingPhotoId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [selectedDishIds, setSelectedDishIds] = useState<string[]>([])
+  const [bulkForm, setBulkForm] = useState<BulkEditForm>(emptyBulkForm)
+  const [bulkApplying, setBulkApplying] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [cloningId, setCloningId] = useState<string | null>(null)
 
   const loadData = async () => {
     setLoading(true)
@@ -111,6 +144,7 @@ export default function AdminDishes({ token }: { token: string }) {
 
       setDishes(dishesResponse.data)
       setCategories(categoriesResponse.data)
+      setSelectedDishIds(prev => prev.filter(id => dishesResponse.data.some((dish: Dish) => dish.id === id)))
       setDrafts(Object.fromEntries(dishesResponse.data.map((dish: Dish) => [
         dish.id,
         {
@@ -143,6 +177,40 @@ export default function AdminDishes({ token }: { token: string }) {
   useEffect(() => {
     loadData()
   }, [])
+
+  const filteredDishes = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase()
+
+    return dishes.filter((dish) => {
+      const matchesCategory = !categoryFilter || dish.categoryId === categoryFilter
+      const haystack = [dish.name, dish.description, dish.category?.name]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      const matchesSearch = !query || haystack.includes(query)
+      return matchesCategory && matchesSearch
+    })
+  }, [dishes, categoryFilter, searchTerm])
+
+  const selectedDishIdSet = useMemo(() => new Set(selectedDishIds), [selectedDishIds])
+  const selectedDishes = useMemo(() => dishes.filter((dish) => selectedDishIdSet.has(dish.id)), [dishes, selectedDishIdSet])
+  const allFilteredSelected = filteredDishes.length > 0 && filteredDishes.every((dish) => selectedDishIdSet.has(dish.id))
+
+  const toggleDishSelection = (dishId: string) => {
+    setSelectedDishIds((prev) => prev.includes(dishId) ? prev.filter((id) => id !== dishId) : [...prev, dishId])
+  }
+
+  const toggleSelectAllFiltered = () => {
+    if (allFilteredSelected) {
+      const filteredIds = new Set(filteredDishes.map((dish) => dish.id))
+      setSelectedDishIds((prev) => prev.filter((id) => !filteredIds.has(id)))
+      return
+    }
+
+    setSelectedDishIds((prev) => Array.from(new Set([...prev, ...filteredDishes.map((dish) => dish.id)])))
+  }
+
+  const resetBulkForm = () => setBulkForm(emptyBulkForm)
 
   const updateDraft = (dishId: string, field: keyof DishDraft, value: string | number | boolean) => {
     setDrafts(prev => ({
@@ -267,6 +335,7 @@ export default function AdminDishes({ token }: { token: string }) {
       await axios.delete(`${API_URL}/admin/dishes/${dishId}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      setSelectedDishIds(prev => prev.filter(id => id !== dishId))
       setMessage('✅ Блюдо удалено')
       await loadData()
     } catch (err: any) {
@@ -313,6 +382,132 @@ export default function AdminDishes({ token }: { token: string }) {
       setMessage(`❌ ${err.response?.data?.message || 'Не удалось удалить фото блюда'}`)
     } finally {
       setUploadingPhotoId(null)
+    }
+  }
+
+  const cloneDish = async (dish: Dish) => {
+    const draft = drafts[dish.id]
+    if (!draft) return
+
+    setCloningId(dish.id)
+    setMessage('')
+    try {
+      await axios.post(`${API_URL}/admin/dishes`, {
+        ...draft,
+        name: `${draft.name} (копия)`,
+        photoUrl: dish.photoUrl || null,
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setMessage(`✅ Блюдо «${dish.name}» склонировано`)
+      await loadData()
+    } catch (err: any) {
+      console.error(err)
+      setMessage(`❌ ${err.response?.data?.message || 'Не удалось клонировать блюдо'}`)
+    } finally {
+      setCloningId(null)
+    }
+  }
+
+  const applyBulkChanges = async () => {
+    if (selectedDishes.length === 0) {
+      setMessage('❌ Сначала выбери блюда, к которым нужно применить изменения')
+      return
+    }
+
+    const overrides: Partial<DishDraft> = {}
+
+    if (bulkForm.price !== '') overrides.price = parseNumber(bulkForm.price)
+    if (bulkForm.calories !== '') overrides.calories = parseNumber(bulkForm.calories)
+    if (bulkForm.weight !== '') overrides.weight = parseNumber(bulkForm.weight)
+    if (bulkForm.measureUnit) overrides.measureUnit = bulkForm.measureUnit
+    if (bulkForm.categoryId) overrides.categoryId = bulkForm.categoryId
+    if (bulkForm.breakfastPart !== '__keep__') overrides.breakfastPart = bulkForm.breakfastPart
+    if (bulkForm.containsPork !== 'keep') overrides.containsPork = bulkForm.containsPork === 'true'
+    if (bulkForm.containsGarlic !== 'keep') overrides.containsGarlic = bulkForm.containsGarlic === 'true'
+    if (bulkForm.containsMayonnaise !== 'keep') overrides.containsMayonnaise = bulkForm.containsMayonnaise === 'true'
+
+    if (Object.keys(overrides).length === 0) {
+      setMessage('❌ Заполни хотя бы одно поле в блоке массового изменения')
+      return
+    }
+
+    setBulkApplying(true)
+    setMessage('')
+
+    try {
+      let updated = 0
+      const failed: string[] = []
+
+      for (const dish of selectedDishes) {
+        const draft = drafts[dish.id]
+        if (!draft) continue
+
+        try {
+          await axios.patch(`${API_URL}/admin/dishes/${dish.id}`, {
+            ...draft,
+            ...overrides,
+          }, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          updated += 1
+        } catch (err: any) {
+          console.error(err)
+          failed.push(`${dish.name}: ${err.response?.data?.message || 'ошибка обновления'}`)
+        }
+      }
+
+      await loadData()
+
+      if (failed.length > 0) {
+        setMessage(`⚠️ Обновлено ${updated} из ${selectedDishes.length}. Ошибки: ${failed.slice(0, 2).join(' | ')}${failed.length > 2 ? ' …' : ''}`)
+      } else {
+        resetBulkForm()
+        setSelectedDishIds([])
+        setMessage(`✅ Массовое обновление применено к ${updated} блюдам`)
+      }
+    } finally {
+      setBulkApplying(false)
+    }
+  }
+
+  const deleteSelectedDishes = async () => {
+    if (selectedDishes.length === 0) {
+      setMessage('❌ Сначала выбери блюда для удаления')
+      return
+    }
+
+    if (!confirm(`Удалить выбранные блюда: ${selectedDishes.length} шт.?`)) return
+
+    setBulkDeleting(true)
+    setMessage('')
+
+    try {
+      let deleted = 0
+      const failed: string[] = []
+
+      for (const dish of selectedDishes) {
+        try {
+          await axios.delete(`${API_URL}/admin/dishes/${dish.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+          deleted += 1
+        } catch (err: any) {
+          console.error(err)
+          failed.push(`${dish.name}: ${err.response?.data?.message || 'ошибка удаления'}`)
+        }
+      }
+
+      await loadData()
+
+      if (failed.length > 0) {
+        setMessage(`⚠️ Удалено ${deleted} из ${selectedDishes.length}. Ошибки: ${failed.slice(0, 2).join(' | ')}${failed.length > 2 ? ' …' : ''}`)
+      } else {
+        setSelectedDishIds([])
+        setMessage(`✅ Удалено ${deleted} блюд`)
+      }
+    } finally {
+      setBulkDeleting(false)
     }
   }
 
@@ -468,20 +663,172 @@ export default function AdminDishes({ token }: { token: string }) {
         </button>
       </div>
 
+      <div style={{ background: '#fff', padding: 20, borderRadius: 8, marginBottom: 25, boxShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Поиск, фильтрация и массовые действия</h3>
+            <div style={{ color: '#666', marginTop: 6 }}>Ищи блюда по названию и составу, фильтруй по категориям и применяй одинаковые изменения сразу к выбранным позициям.</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ padding: '10px 14px', borderRadius: 999, background: '#f8f9fa', fontWeight: 600 }}>Всего: {dishes.length}</div>
+            <div style={{ padding: '10px 14px', borderRadius: 999, background: '#eef6ff', color: '#0b5ed7', fontWeight: 600 }}>Найдено: {filteredDishes.length}</div>
+            <div style={{ padding: '10px 14px', borderRadius: 999, background: selectedDishIds.length ? '#e8fff3' : '#f8f9fa', color: selectedDishIds.length ? '#0f7b45' : '#666', fontWeight: 600 }}>Выбрано: {selectedDishIds.length}</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 2fr) minmax(220px, 1fr)', gap: 12, marginBottom: 16 }}>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Быстрый поиск</span>
+            <input
+              placeholder="Например: плов, курица, суп, салат"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span>Фильтр по категории</span>
+            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+              <option value="">Все категории</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+          <button onClick={toggleSelectAllFiltered} disabled={filteredDishes.length === 0} style={{ background: '#0d6efd', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
+            {allFilteredSelected ? 'Снять выделение с найденных' : 'Выбрать все найденные'}
+          </button>
+          <button onClick={() => setSelectedDishIds([])} disabled={selectedDishIds.length === 0} style={{ background: '#6c757d', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
+            Очистить выделение
+          </button>
+          <button onClick={() => { setSearchTerm(''); setCategoryFilter('') }} disabled={!searchTerm && !categoryFilter} style={{ background: '#f8f9fa', color: '#212529', border: '1px solid #dee2e6', borderRadius: 6, padding: '10px 18px' }}>
+            Сбросить фильтры
+          </button>
+        </div>
+
+        <div style={{ border: '1px solid #e8eef7', borderRadius: 12, padding: 16, background: '#fbfdff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+            <div>
+              <strong>Массовое изменение выбранных блюд</strong>
+              <div style={{ color: '#666', marginTop: 6 }}>Заполняй только те поля, которые нужно применить ко всем выбранным позициям. Остальные значения останутся как есть.</div>
+            </div>
+            <div style={{ color: selectedDishIds.length ? '#0f7b45' : '#666', fontWeight: 600 }}>Выбрано: {selectedDishIds.length}</div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Цена, ₽</span>
+              <input type="number" min="0" value={bulkForm.price} onChange={(e) => setBulkForm(prev => ({ ...prev, price: e.target.value }))} placeholder="Не менять" />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Калории</span>
+              <input type="number" min="0" value={bulkForm.calories} onChange={(e) => setBulkForm(prev => ({ ...prev, calories: e.target.value }))} placeholder="Не менять" />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Вес / объем</span>
+              <input type="number" min="0" value={bulkForm.weight} onChange={(e) => setBulkForm(prev => ({ ...prev, weight: e.target.value }))} placeholder="Не менять" />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Единица</span>
+              <select value={bulkForm.measureUnit} onChange={(e) => setBulkForm(prev => ({ ...prev, measureUnit: e.target.value }))}>
+                <option value="">Не менять</option>
+                <option value="GRAM">г</option>
+                <option value="ML">мл</option>
+                <option value="PCS">порц.</option>
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Категория</span>
+              <select value={bulkForm.categoryId} onChange={(e) => setBulkForm(prev => ({ ...prev, categoryId: e.target.value }))}>
+                <option value="">Не менять</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>{category.name}</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Часть завтрака</span>
+              <select value={bulkForm.breakfastPart} onChange={(e) => setBulkForm(prev => ({ ...prev, breakfastPart: e.target.value as BulkEditForm['breakfastPart'] }))}>
+                <option value="__keep__">Не менять</option>
+                <option value="">Сбросить</option>
+                <option value="MAIN">Основная часть</option>
+                <option value="SIDE">Дополнительная часть</option>
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Свинина</span>
+              <select value={bulkForm.containsPork} onChange={(e) => setBulkForm(prev => ({ ...prev, containsPork: e.target.value as BulkBooleanMode }))}>
+                <option value="keep">Не менять</option>
+                <option value="true">Да</option>
+                <option value="false">Нет</option>
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Чеснок</span>
+              <select value={bulkForm.containsGarlic} onChange={(e) => setBulkForm(prev => ({ ...prev, containsGarlic: e.target.value as BulkBooleanMode }))}>
+                <option value="keep">Не менять</option>
+                <option value="true">Да</option>
+                <option value="false">Нет</option>
+              </select>
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span>Майонез</span>
+              <select value={bulkForm.containsMayonnaise} onChange={(e) => setBulkForm(prev => ({ ...prev, containsMayonnaise: e.target.value as BulkBooleanMode }))}>
+                <option value="keep">Не менять</option>
+                <option value="true">Да</option>
+                <option value="false">Нет</option>
+              </select>
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
+            <button onClick={applyBulkChanges} disabled={bulkApplying || selectedDishIds.length === 0} style={{ background: '#198754', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
+              {bulkApplying ? 'Применяю...' : 'Применить к выбранным'}
+            </button>
+            <button onClick={resetBulkForm} disabled={bulkApplying || bulkDeleting} style={{ background: '#f8f9fa', color: '#212529', border: '1px solid #dee2e6', borderRadius: 6, padding: '10px 18px' }}>
+              Очистить поля массового изменения
+            </button>
+            <button onClick={deleteSelectedDishes} disabled={bulkDeleting || selectedDishIds.length === 0} style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
+              {bulkDeleting ? 'Удаляю...' : 'Удалить выбранные'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <p>Загрузка блюд...</p>
       ) : dishes.length === 0 ? (
         <p>Блюд пока нет</p>
+      ) : filteredDishes.length === 0 ? (
+        <div style={{ background: '#fff', padding: 20, borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+          <strong>По текущему фильтру блюд не найдено.</strong>
+          <div style={{ color: '#666', marginTop: 8 }}>Попробуй очистить поиск или выбрать другую категорию.</div>
+        </div>
       ) : (
-        dishes.map(dish => {
+        filteredDishes.map(dish => {
           const draft = drafts[dish.id]
           if (!draft) return null
 
           return (
             <div key={dish.id} style={{ background: '#fff', padding: 20, borderRadius: 8, marginBottom: 15, boxShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-              <div style={{ marginBottom: 10 }}>
-                <strong>{dish.name}</strong>
-                <div style={{ color: '#666' }}>{dish.category?.name}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 12, alignItems: 'flex-start' }}>
+                <label style={{ display: 'flex', gap: 12, alignItems: 'flex-start', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={selectedDishIdSet.has(dish.id)} onChange={() => toggleDishSelection(dish.id)} style={{ marginTop: 4 }} />
+                  <div>
+                    <strong>{dish.name}</strong>
+                    <div style={{ color: '#666', marginTop: 4 }}>{dish.category?.name}</div>
+                  </div>
+                </label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ padding: '6px 10px', borderRadius: 999, background: '#f8f9fa', color: '#666', fontSize: 13 }}>
+                    ID: {dish.id.slice(0, 8)}
+                  </div>
+                  <div style={{ padding: '6px 10px', borderRadius: 999, background: '#eef6ff', color: '#0b5ed7', fontSize: 13 }}>
+                    {draft.weight || 0} {draft.measureUnit === 'ML' ? 'мл' : draft.measureUnit === 'PCS' ? 'порц.' : 'г'}
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
@@ -557,6 +904,9 @@ export default function AdminDishes({ token }: { token: string }) {
               <div style={{ display: 'flex', gap: 10, marginTop: 15 }}>
                 <button onClick={() => saveDish(dish.id)} disabled={savingId === dish.id} style={{ background: '#007bff', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
                   {savingId === dish.id ? 'Сохранение...' : 'Сохранить'}
+                </button>
+                <button onClick={() => cloneDish(dish)} disabled={cloningId === dish.id} style={{ background: '#6f42c1', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
+                  {cloningId === dish.id ? 'Клонирую...' : 'Клонировать'}
                 </button>
                 <button onClick={() => deleteDish(dish.id)} style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
                   Удалить
