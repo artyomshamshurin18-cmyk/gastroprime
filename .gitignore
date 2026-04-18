@@ -1,0 +1,31 @@
+# Dependencies and build artifacts
+**/node_modules/
+**/dist/
+coverage/
+*.log
+
+# Environment and secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Runtime data
+backend/uploads/
+backend/prisma/dev.db
+*.pid
+
+# Local backups and temp files
+*.bak
+*.bak-*
+*.orig
+.DS_Store
+
+# Legacy accidental top-level app copy kept on the server for reference only
+/index.html
+/package.json
+/package-lock.json
+/prisma/
+/public/
+/src/
+/tsconfig.json
+/vite.config.ts

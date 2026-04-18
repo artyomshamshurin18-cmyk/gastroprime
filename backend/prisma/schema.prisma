@@ -1,0 +1,418 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String?
+  lastName  String?
+  jobTitle  String?
+  phone     String?
+  allergies String?
+  avatarUrl String?
+  role      String   @default("CLIENT")
+  status    String   @default("ACTIVE")
+  companyId String?
+  mealModeOverride String?
+  setTypeOverride String?
+  isHalal   Boolean  @default(false)
+  isVip     Boolean  @default(false)
+  avoidGarlic Boolean @default(false)
+  avoidMayonnaise Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company        Company?    @relation("CompanyMembers", fields: [companyId], references: [id])
+  ownedCompany   Company?    @relation("CompanyOwner")
+  orders         Order[]
+  weeklyMenus    WeeklyMenu[]
+  attendanceDays EmployeeAttendance[]
+  supportMessages SupportMessage[]
+  chatParticipants ChatParticipant[]
+  chatMessages    ChatMessage[]      @relation("ChatMessageSender")
+  createdChatInvites ChatInvite[]    @relation("ChatInviteCreator")
+  guestInviteSessions ChatInviteGuest[]
+}
+
+model Company {
+  id              String  @id @default(uuid())
+  name            String
+  status          String  @default("ACTIVE")
+  contactPerson   String?
+  address         String?
+  logoUrl         String?
+  billingAddress  String?
+  billingDetails  String?
+  entryConditions String?
+  routeName       String?
+  deliveryTime    String?
+  peopleCount     Int?
+  notes           String?
+  mealPlan        String?
+  workEmail       String?
+  website         String?
+  priceSegment    String  @default("STANDARD")
+  defaultSetType  String  @default("FULL")
+  balance         Int     @default(0)
+  limit           Int     @default(50000)
+  dailyLimit      Int     @default(0)
+  userId          String? @unique
+  user            User?   @relation("CompanyOwner", fields: [userId], references: [id])
+
+  users            User[]            @relation("CompanyMembers")
+  orders           Order[]
+  deliveryClosings DeliveryClosing[]
+  invoices         Invoice[]
+  supportMessages  SupportMessage[]
+  chatConversations ChatConversation[]
+  chatInvites      ChatInvite[]
+  categoryPrices   CompanyCategoryPrice[]
+}
+
+model BillingSettings {
+  key           String   @id @default("main")
+  sellerName    String?
+  sellerAddress String?
+  sellerDetails String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model DeliveryClosing {
+  id               String   @id @default(uuid())
+  companyId        String
+  date             DateTime
+  status           String   @default("DELIVERED")
+  deviationAmount  Int      @default(0)
+  deviationComment String?
+  managerComment   String?
+  createdById      String?
+  updatedById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, date])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  dishes Dish[]
+  companyPrices CompanyCategoryPrice[]
+}
+
+model Dish {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  photoUrl    String?
+  price       Int
+  calories    Int?
+  weight      Int?
+  measureUnit String   @default("GRAM")
+  containsPork Boolean @default(false)
+  containsGarlic Boolean @default(false)
+  containsMayonnaise Boolean @default(false)
+  breakfastPart String?
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems     OrderItem[]
+  dailyMenuItems DailyMenuItem[]
+  selectedDishes SelectedDish[]
+}
+
+// Меню на конкретный день
+model DailyMenu {
+  id        String   @id @default(uuid())
+  date      DateTime @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items DailyMenuItem[]
+}
+
+// Блюда в меню на день (с лимитом количества)
+model DailyMenuItem {
+  id          String @id @default(uuid())
+  dailyMenuId String
+  dishId      String
+  maxQuantity Int    @default(100)
+  sortOrder   Int    @default(0)
+  
+  dailyMenu   DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
+  dish        Dish      @relation(fields: [dishId], references: [id])
+
+  @@unique([dailyMenuId, dishId])
+}
+
+// Выбор клиента на неделю/период
+model WeeklyMenu {
+  id          String   @id @default(uuid())
+  userId      String
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user        User          @relation(fields: [userId], references: [id])
+  selections  DaySelection[]
+  
+  @@index([userId])
+}
+
+// Выбор на конкретный день
+model DaySelection {
+  id            String   @id @default(uuid())
+  weeklyMenuId  String
+  date          DateTime
+  utensils      Int      @default(1)
+  needBread     Boolean  @default(true)
+  notes         String?
+  
+  weeklyMenu    WeeklyMenu       @relation(fields: [weeklyMenuId], references: [id], onDelete: Cascade)
+  items         SelectedDish[]
+  
+  @@unique([weeklyMenuId, date])
+}
+
+// Выбранное блюдо на день
+model SelectedDish {
+  id             String @id @default(uuid())
+  daySelectionId String
+  dishId         String
+  quantity       Int    @default(1)
+  
+  daySelection   DaySelection @relation(fields: [daySelectionId], references: [id], onDelete: Cascade)
+  dish           Dish         @relation(fields: [dishId], references: [id])
+}
+
+model EmployeeAttendance {
+  id        String   @id @default(uuid())
+  userId    String
+  date      DateTime
+  status    String   @default("OFFICE")
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  orderNumber   String      @unique
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  companyId     String
+  company       Company     @relation(fields: [companyId], references: [id])
+  status        String      @default("PENDING")
+  totalAmount   Int
+  deliveryDate  DateTime
+  deliveryTime  String?
+  comment       String?
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String @id @default(uuid())
+  orderId   String
+  order     Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dishId    String
+  dish      Dish   @relation(fields: [dishId], references: [id])
+  quantity  Int
+  unitPrice Int
+}
+
+model Invoice {
+  id                   String   @id @default(uuid())
+  number               String   @unique
+  companyId            String
+  type                 String   @default("PERIOD")
+  status               String   @default("ISSUED")
+  periodStart          DateTime?
+  periodEnd            DateTime?
+  issueDate            DateTime @default(now())
+  dueDate              DateTime?
+  currency             String   @default("KZT")
+  subtotal             Int      @default(0)
+  deviationTotal       Int      @default(0)
+  total                Int      @default(0)
+  comment              String?
+  buyerSnapshotName    String
+  buyerSnapshotAddress String?
+  buyerSnapshotDetails String?
+  sellerSnapshotName   String
+  sellerSnapshotAddress String?
+  sellerSnapshotDetails String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lines   InvoiceLine[]
+}
+
+model InvoiceLine {
+  id              String   @id @default(uuid())
+  invoiceId       String
+  date            DateTime?
+  description     String
+  quantity        Int?
+  unitPrice       Int?
+  amount          Int      @default(0)
+  deviationAmount Int      @default(0)
+  total           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model SupportMessage {
+  id        String   @id @default(uuid())
+  companyId String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model ChatConversation {
+  id        String   @id @default(uuid())
+  companyId String
+  title     String?
+  type      String   @default("COMPANY_SUPPORT")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  participants ChatParticipant[]
+  messages     ChatMessage[]
+  invites      ChatInvite[]
+
+  @@unique([companyId, type])
+  @@index([companyId])
+}
+
+model ChatParticipant {
+  id                    String   @id @default(uuid())
+  conversationId        String
+  userId                String
+  canManageParticipants Boolean  @default(false)
+  joinedAt              DateTime @default(now())
+  lastReadAt            DateTime?
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, lastReadAt])
+}
+
+model ChatMessage {
+  id             String   @id @default(uuid())
+  conversationId String
+  senderId       String
+  text           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User             @relation("ChatMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  attachments  ChatAttachment[]
+
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model ChatAttachment {
+  id        String   @id @default(uuid())
+  messageId String
+  fileName  String
+  fileUrl   String
+  mimeType  String
+  sizeBytes Int
+  kind      String   @default("FILE")
+  createdAt DateTime @default(now())
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model ChatInvite {
+  id              String   @id @default(uuid())
+  conversationId  String
+  companyId       String
+  createdByUserId String
+  token           String   @unique
+  label           String?
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  conversation ChatConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy    User              @relation("ChatInviteCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  guests       ChatInviteGuest[]
+
+  @@index([conversationId, revokedAt])
+  @@index([companyId, revokedAt])
+}
+
+model ChatInviteGuest {
+  id          String   @id @default(uuid())
+  inviteId    String
+  userId      String   @unique
+  accessToken String   @unique
+  guestName   String
+  guestEmail  String?
+  guestPhone  String?
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime?
+
+  invite ChatInvite @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([inviteId])
+}
+
+model CompanyCategoryPrice {
+  id         String   @id @default(uuid())
+  companyId  String
+  categoryId String
+  price      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, categoryId])
+  @@index([companyId])
+  @@index([categoryId])
+}
