@@ -14,3 +14,7 @@ Loose files in `/root/*.ts` are also stale manual copies and should not be used 
 
 ## Goal
 Keep future production edits inside `backend/` and `frontend/`, then rebuild/redeploy from there.
+
+## Archived legacy files
+On 2026-04-18, the legacy top-level app copy and stale loose TypeScript files were moved to:
+- `/root/_gastroprime_legacy_archive_20260418-235157`
