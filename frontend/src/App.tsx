@@ -196,6 +196,7 @@ function ClientDashboard({ user, token, onLogout, onUserUpdate, impersonatorUser
           <span className="gp-top-pill">Статус компании: {companyStatusLabels[companyStatus] || companyStatus}</span>
           <span className="gp-top-pill gp-top-pill--accent">Баланс: {user?.company?.balance ?? 0} ₽</span>
           <span className="gp-top-pill">Лимит/день: {user?.company?.dailyLimit ?? 0} ₽</span>
+          <button onClick={() => setActiveTab('help')} style={{ padding: '10px 16px', background: '#fff3eb', color: '#b63d1c', border: '1px solid rgba(237,57,21,0.18)', borderRadius: 12, fontWeight: 700 }}>📘 Инструкция</button>
           <button onClick={onLogout} style={{ padding: '10px 16px', background: '#1c1a18', color: 'white', border: 'none', borderRadius: 12 }}>Выйти</button>
         </div>
       </div>
@@ -207,7 +208,7 @@ function ClientDashboard({ user, token, onLogout, onUserUpdate, impersonatorUser
         {['ACTIVE', 'ON_HOLD'].includes(companyStatus) && <div onClick={() => setActiveTab('invoices')} className={`gp-tab ${activeTab === 'invoices' ? 'gp-tab--active' : ''}`}>💳 Счета и сверка</div>}
         {['ONBOARDING', 'ACTIVE', 'ON_HOLD'].includes(companyStatus) && <div onClick={() => setActiveTab('chat')} className={`gp-tab ${activeTab === 'chat' ? 'gp-tab--active' : ''}`}>💬 Менеджер</div>}
         <div onClick={() => setActiveTab('profile')} className={`gp-tab ${activeTab === 'profile' ? 'gp-tab--active' : ''}`}>👤 Профиль</div>
-        <div onClick={() => setActiveTab('help')} className={`gp-tab ${activeTab === 'help' ? 'gp-tab--active' : ''}`}>❓ Как пользоваться</div>
+        <div onClick={() => setActiveTab('help')} className={`gp-tab ${activeTab === 'help' ? 'gp-tab--active' : ''}`}>📘 Инструкция</div>
       </div>
       <div className="gp-content">
         <InstallAppHint />
@@ -240,7 +241,7 @@ function ClientDashboard({ user, token, onLogout, onUserUpdate, impersonatorUser
         {['ACTIVE', 'ON_HOLD'].includes(companyStatus) && <button className={`gp-mobile-nav__item ${activeTab === 'invoices' ? 'gp-mobile-nav__item--active' : ''}`} onClick={() => setActiveTab('invoices')}><span>💳</span><span>Счета</span></button>}
         {['ONBOARDING', 'ACTIVE', 'ON_HOLD'].includes(companyStatus) && <button className={`gp-mobile-nav__item ${activeTab === 'chat' ? 'gp-mobile-nav__item--active' : ''}`} onClick={() => setActiveTab('chat')}><span>💬</span><span>Менеджер</span></button>}
         <button className={`gp-mobile-nav__item ${activeTab === 'profile' ? 'gp-mobile-nav__item--active' : ''}`} onClick={() => setActiveTab('profile')}><span>👤</span><span>Профиль</span></button>
-        <button className={`gp-mobile-nav__item ${activeTab === 'help' ? 'gp-mobile-nav__item--active' : ''}`} onClick={() => setActiveTab('help')}><span>❓</span><span>Помощь</span></button>
+        <button className={`gp-mobile-nav__item ${activeTab === 'help' ? 'gp-mobile-nav__item--active' : ''}`} onClick={() => setActiveTab('help')}><span>📘</span><span>Инструкция</span></button>
       </div>
     </div>
   )
@@ -301,7 +302,7 @@ function ManagerDashboard({ user, token, onLogout, onImpersonate }: { user: any,
             <div className="gp-brand-subtitle">Панель менеджера</div>
           </div>
         </div>
-        <div className="gp-header-right"><span className="gp-top-pill">{user?.email}</span><button onClick={onLogout} style={{ padding: '10px 16px', background: '#1c1a18', color: 'white', border: 'none', borderRadius: 12 }}>Выйти</button></div>
+        <div className="gp-header-right"><span className="gp-top-pill">{user?.email}</span><button onClick={() => setActiveTab('help')} style={{ padding: '10px 16px', background: '#fff3eb', color: '#b63d1c', border: '1px solid rgba(237,57,21,0.18)', borderRadius: 12, fontWeight: 700 }}>📘 Инструкция</button><button onClick={onLogout} style={{ padding: '10px 16px', background: '#1c1a18', color: 'white', border: 'none', borderRadius: 12 }}>Выйти</button></div>
       </div>
       <div className="gp-tabs">
         <div onClick={() => setActiveTab('clients')} className={`gp-tab ${activeTab === 'clients' ? 'gp-tab--active' : ''}`}>🗂️ Клиенты</div>
@@ -315,7 +316,7 @@ function ManagerDashboard({ user, token, onLogout, onImpersonate }: { user: any,
         <div onClick={() => setActiveTab('categories')} className={`gp-tab ${activeTab === 'categories' ? 'gp-tab--active' : ''}`}>🗂️ Категории</div>
         <div onClick={() => setActiveTab('dishes')} className={`gp-tab ${activeTab === 'dishes' ? 'gp-tab--active' : ''}`}>🍳 Блюда</div>
         <div onClick={() => setActiveTab('kitchen')} className={`gp-tab ${activeTab === 'kitchen' ? 'gp-tab--active' : ''}`}>🍲 Сводка</div>
-        <div onClick={() => setActiveTab('help')} className={`gp-tab ${activeTab === 'help' ? 'gp-tab--active' : ''}`}>❓ Как пользоваться</div>
+        <div onClick={() => setActiveTab('help')} className={`gp-tab ${activeTab === 'help' ? 'gp-tab--active' : ''}`}>📘 Инструкция</div>
       </div>
       <div className="gp-content">
         {activeTab === 'clients' && <ManagerBoard token={token} onImpersonate={onImpersonate} />}
