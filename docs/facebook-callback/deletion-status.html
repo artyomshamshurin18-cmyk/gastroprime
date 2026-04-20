@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Deletion Status - Gastroprime</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+        .status { background: #f8f9fa; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .code { font-family: monospace; background: #e9ecef; padding: 10px; border-radius: 5px; font-size: 18px; color: #1877f2; }
+    </style>
+</head>
+<body>
+    <div class="status">
+        <h1>📋 Data Deletion Status</h1>
+        <p>For Instagram app: <strong>Ins.gastroprime-IG</strong></p>
+        
+        <p><strong>Confirmation Code:</strong></p>
+        <div class="code" id="code">Loading...</div>
+        
+        <p><strong>Status:</strong> ✅ Request received and being processed</p>
+        
+        <p>Your data deletion request has been logged and will be processed within 30 days in accordance with GDPR requirements.</p>
+        
+        <p><strong>Contact:</strong> contact@gastroprime.ru</p>
+        <p><strong>Instagram:</strong> @gastroprime.ru</p>
+        <p><strong>App ID:</strong> 930712786475030</p>
+    </div>
+    
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code") || "GPRM" + Math.random().toString(36).substr(2, 4).toUpperCase();
+        document.getElementById("code").textContent = code;
+    </script>
+</body>
+</html>
