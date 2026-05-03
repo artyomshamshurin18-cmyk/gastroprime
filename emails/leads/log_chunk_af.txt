@@ -1,0 +1,22 @@
+[1/20] ppobeda.ru                          OK 1
+[2/20] prestige-kupe.com                   OK 4
+[3/20] promelektrografit.ru                --
+[4/20] red-line.ru                         OK 1
+[5/20] roberti-mebel.ru                    OK 1
+[6/20] samygin.com                         OK 1
+[7/20] sergio-mobili.ru                    OK 2
+[8/20] sincos-mebel.ru                     OK 1
+[9/20] smartballs.ru                       OK 1
+[10/20] smp-bobr.ru                         --
+[11/20] sonmart.ru                          OK 2
+[12/20] steda.studio                        OK 2
+[13/20] t-oborud.ru                         OK 1
+[14/20] tamburato.ru                        OK 1
+[15/20] tesoro-mebel.ru                     OK 1
+[16/20] texchemresources.ru                 OK 1
+[17/20] tpksaturn.ru                        OK 2
+[18/20] vamstol.ru                          OK 1
+[19/20] venetofabric.ru                     --
+[20/20] vestor.ru                           OK 1
+
+Done: 17 sites, 24 emails

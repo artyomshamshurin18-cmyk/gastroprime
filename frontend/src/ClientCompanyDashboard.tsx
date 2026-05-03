@@ -483,6 +483,8 @@ export default function ClientCompanyDashboard({ token, onUserUpdate }: { token:
           {data?.company && <strong style={{ flex: '1 1 220px' }}>{data.company.name}</strong>}
           {data?.company && <span style={{ color: '#6f42c1', fontWeight: 700, flex: '1 1 220px' }}>Статус: {companyStatusLabels[data.company.status] || data.company.status}</span>}
           <span style={{ color: '#17a2b8', flex: '1 1 180px' }}>Лимит/день: {data?.company?.dailyLimit ?? 0} ₽</span>
+          <span style={{ color: "#28a745", flex: "1 1 180px" }}>Дебет: {data?.company?.balance ?? 0} ₽</span>
+          <span style={{ color: "#fd7e14", flex: "1 1 180px" }}>Кредит: {data?.company?.creditBalance ?? 0} ₽</span>
         </div>
         <div style={{ marginTop: 12, maxWidth: 420 }}>
           <input type="file" accept="image/*" onChange={(e) => uploadCompanyLogo(e.target.files?.[0] || null)} />

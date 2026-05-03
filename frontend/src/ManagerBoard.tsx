@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
+import CrmMain from './crm/CrmMain'
 import { io } from 'socket.io-client'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
@@ -183,6 +184,7 @@ export default function ManagerBoard({ token, onImpersonate }: { token: string, 
   const [openedChatId, setOpenedChatId] = useState<string | null>(null)
   const [chatDetails, setChatDetails] = useState<Record<string, ChatDetail>>({})
   const [chatInputs, setChatInputs] = useState<Record<string, string>>({})
+  const [showCrm, setShowCrm] = useState(false)
   const [chatFiles, setChatFiles] = useState<Record<string, File[]>>({})
   const [chatLoadingId, setChatLoadingId] = useState<string | null>(null)
   const [chatSendingId, setChatSendingId] = useState<string | null>(null)
@@ -516,6 +518,10 @@ export default function ManagerBoard({ token, onImpersonate }: { token: string, 
 
   return (
     <div>
+      {showCrm ? (
+        <CrmMain token={token} userRole="MANAGER" />
+      ) : (
+        <>
       <h2>Доска клиентов</h2>
       <p style={{ color: '#666', marginTop: -5, marginBottom: 18 }}>
         Здесь видно, кто из клиентов уже прислал заявки на плановое меню, а кого ещё нужно подтолкнуть. Можно быстро найти клиента, открыть групповой чат, добавить участников и поправить карточку.
@@ -814,6 +820,21 @@ export default function ManagerBoard({ token, onImpersonate }: { token: string, 
           </div>
         </div>
       )}
+    </>
+      )}
+      <button 
+        onClick={() => setShowCrm(v => !v)}
+        style={{
+          position: 'fixed', bottom: 80, right: 16, zIndex: 999,
+          padding: '10px 16px', borderRadius: 24, border: 'none',
+          background: showCrm ? '#e8f0fe' : '#0d6efd',
+          color: showCrm ? '#0056b3' : '#fff',
+          fontWeight: 600, fontSize: 13, cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+        }}
+      >
+        📋 CRM {showCrm ? '✕' : '→'}
+      </button>
     </div>
   )
 }

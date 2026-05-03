@@ -63,7 +63,7 @@ export class DailyMenuService {
       where: { date: new Date(date) },
       include: {
         items: {
-          include: { dish: { include: { category: true } } },
+          include: { dish: { include: { category: true } }, garnishDish: { include: { category: true } } },
           orderBy: { sortOrder: 'asc' }
         }
       }
@@ -91,7 +91,19 @@ export class DailyMenuService {
           containsGarlic: item.dish.containsGarlic,
           containsMayonnaise: item.dish.containsMayonnaise,
           maxQuantity: item.maxQuantity,
-          category: item.dish.category.name
+          category: item.dish.category.name,
+          garnishDish: item.garnishDish ? {
+            id: item.garnishDish.id,
+            name: item.garnishDish.name,
+            price: getResolvedCompanyDishPrice(item.garnishDish, priceMap),
+            weight: item.garnishDish.weight,
+            measureUnit: item.garnishDish.measureUnit,
+            photoUrl: item.garnishDish.photoUrl,
+            calories: item.garnishDish.calories,
+            containsPork: item.garnishDish.containsPork,
+            containsGarlic: item.garnishDish.containsGarlic,
+            containsMayonnaise: item.garnishDish.containsMayonnaise
+          } : null
         });
       return acc;
     }, {});
@@ -113,7 +125,7 @@ export class DailyMenuService {
       },
       include: {
         items: {
-          include: { dish: { include: { category: true } } },
+          include: { dish: { include: { category: true } }, garnishDish: { include: { category: true } } },
           orderBy: { sortOrder: 'asc' }
         }
       },
@@ -137,7 +149,19 @@ export class DailyMenuService {
           containsPork: item.dish.containsPork,
           containsGarlic: item.dish.containsGarlic,
           containsMayonnaise: item.dish.containsMayonnaise,
-          maxQuantity: item.maxQuantity
+          maxQuantity: item.maxQuantity,
+          garnishDish: item.garnishDish ? {
+            id: item.garnishDish.id,
+            name: item.garnishDish.name,
+            price: getResolvedCompanyDishPrice(item.garnishDish, priceMap),
+            weight: item.garnishDish.weight,
+            measureUnit: item.garnishDish.measureUnit,
+            photoUrl: item.garnishDish.photoUrl,
+            calories: item.garnishDish.calories,
+            containsPork: item.garnishDish.containsPork,
+            containsGarlic: item.garnishDish.containsGarlic,
+            containsMayonnaise: item.garnishDish.containsMayonnaise
+          } : null
         });
         return acc;
       }, {});
@@ -149,7 +173,7 @@ export class DailyMenuService {
     });
   }
 
-  async createOrUpdate(data: { date: string; items: { dishId: string; maxQuantity: number; sortOrder: number }[] }) {
+  async createOrUpdate(data: { date: string; items: { dishId: string; maxQuantity: number; sortOrder: number; garnishDishId?: string }[] }) {
     const date = new Date(data.date);
 
     if (Number.isNaN(date.getTime())) {
@@ -176,7 +200,8 @@ export class DailyMenuService {
           create: data.items.map((item, index) => ({
             dishId: item.dishId,
             maxQuantity: item.maxQuantity,
-            sortOrder: item.sortOrder ?? index
+            sortOrder: item.sortOrder ?? index,
+            ...(item.garnishDishId ? { garnishDishId: item.garnishDishId } : {}),
           }))
         }
       },

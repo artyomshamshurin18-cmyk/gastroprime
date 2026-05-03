@@ -1,0 +1,6 @@
+[1/20] pnk-group.ru                        OK 1
+[2/20] pnk-park.ru                         --
+[3/20] logopark-sever.ru                   --
+[4/20] mlp.ru                              --
+[5/20] mlp-logistics.ru                    --
+[6/20] radius-group.ru                     

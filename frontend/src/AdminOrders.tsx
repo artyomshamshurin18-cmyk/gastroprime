@@ -38,7 +38,9 @@ const statusLabels: Record<string, string> = {
   PREPARING: 'Готовится',
   READY: 'Готов',
   DELIVERED: 'Доставлен',
-  CANCELLED: 'Отменен'
+  CANCELLED: 'Отменен',
+  PAID: 'Оплачено',
+  DEFERRED: 'Отсрочка'
 }
 
 const statusColors: Record<string, string> = {
@@ -47,7 +49,9 @@ const statusColors: Record<string, string> = {
   PREPARING: '#fd7e14',
   READY: '#28a745',
   DELIVERED: '#6c757d',
-  CANCELLED: '#dc3545'
+  CANCELLED: '#dc3545',
+  PAID: '#28a745',
+  DEFERRED: '#fd7e14'
 }
 
 export default function AdminOrders({ token }: { token: string }) {
@@ -181,6 +185,38 @@ export default function AdminOrders({ token }: { token: string }) {
                   </div>
                 ))}
               </div>
+                {(order.status === "CONFIRMED" || order.status === "PENDING") && (
+                  <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+                    <button onClick={async () => {
+                      try {
+                        await axios.post(API_URL + "/admin/orders/" + order.id + "/charge", {}, {
+                          headers: { Authorization: "Bearer " + token }
+                        });
+                        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: "PAID" } : o));
+                        setMessage("\u2705 Средства списаны с баланса");
+                      } catch (err) {
+                        const msg = (err as any)?.response?.data?.message || "Ошибка списания";
+                        setMessage("\u274c " + msg);
+                      }
+                    }} style={{ background: "#28a745", color: "white", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 14 }}>
+                      Списать с баланса
+                    </button>
+                    <button onClick={async () => {
+                      try {
+                        await axios.post(API_URL + "/admin/orders/" + order.id + "/defer", {}, {
+                          headers: { Authorization: "Bearer " + token }
+                        });
+                        setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: "DEFERRED" } : o));
+                        setMessage("\u2705 Отсрочка платежа");
+                      } catch (err) {
+                        const msg = (err as any)?.response?.data?.message || "Ошибка";
+                        setMessage("\u274c " + msg);
+                      }
+                    }} style={{ background: "#fd7e14", color: "white", border: "none", borderRadius: 6, padding: "8px 16px", fontSize: 14 }}>
+                      Отсрочка платежа
+                    </button>
+                  </div>
+                )}
             </div>
           </div>
         ))

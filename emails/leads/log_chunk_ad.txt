@@ -1,0 +1,22 @@
+[1/20] kuhnigarant-moskva.ru               OK 2
+[2/20] kuhniviva.ru                        OK 1
+[3/20] kurazh-mebel.ru                     OK 121
+[4/20] lamondi.ru                          OK 6
+[5/20] leber-mebel.ru                      OK 3
+[6/20] legendmebel.group                   OK 1
+[7/20] lepota-rus.ru                       OK 1
+[8/20] liva62.com                          OK 1
+[9/20] loftwood.msk.ru                     --
+[10/20] look-office.ru                      OK 2
+[11/20] luluspace.ru                        OK 2
+[12/20] magnetron1.ru                       --
+[13/20] manekenplus.ru                      OK 1
+[14/20] market-b2bfabrika.ru                OK 1
+[15/20] mart-m.ru                           OK 1
+[16/20] massivdoors.com                     OK 3
+[17/20] masterfabrik.ru                     --
+[18/20] masterwood.group                    OK 1
+[19/20] maxmalevich.ru                      OK 1
+[20/20] mbgreen.ru                          OK 2
+
+Done: 17 sites, 150 emails

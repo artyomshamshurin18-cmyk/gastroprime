@@ -1,0 +1,22 @@
+[1/20] 100lyarka.ru                        --
+[2/20] alaev-mebeli.ru                     OK 1
+[3/20] alvest-mebel.ru                     OK 2
+[4/20] anderssen.ru                        OK 1
+[5/20] andrwood.ru                         OK 1
+[6/20] andrey1.ru                          OK 1
+[7/20] annki.studio                        OK 1
+[8/20] antares.com.ru                      OK 1
+[9/20] archipelago.studio                  OK 3
+[10/20] art-lit.com                         OK 1
+[11/20] artvivo.ru                          OK 3
+[12/20] asplastgroup.ru                     OK 1
+[13/20] avangard.biz                        OK 2
+[14/20] beni.ru                             OK 1
+[15/20] bogacho.ru                          OK 2
+[16/20] britannica.su                       OK 2
+[17/20] bravomebel.info                     OK 1
+[18/20] craftmebel.com                      OK 3
+[19/20] ctot.ru                             OK 1
+[20/20] dana.ru                             OK 1
+
+Done: 19 sites, 29 emails

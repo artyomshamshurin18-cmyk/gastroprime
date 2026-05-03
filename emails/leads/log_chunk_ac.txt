@@ -1,0 +1,22 @@
+[1/20] grafitech.ru                        OK 1
+[2/20] grandmanor.ru                       OK 2
+[3/20] graphitel.ru                        OK 2
+[4/20] green-line-mebel.ru                 --
+[5/20] gubanov.studio                      OK 1
+[6/20] hardmassive.ru                      OK 2
+[7/20] ikontum.ru                          OK 1
+[8/20] inter-lux.pro                       OK 2
+[9/20] kanzer.ru                           --
+[10/20] karbon-group.ru                     OK 2
+[11/20] karbosil.com                        OK 1
+[12/20] kingpallet.ru                       OK 1
+[13/20] kmkzavod.ru                         OK 17
+[14/20] kromdok.ru                          OK 1
+[15/20] ksprof.ru                           OK 1
+[16/20] ksystema.ru                         OK 2
+[17/20] kuhni-cucina.ru                     OK 1
+[18/20] kuhni-forest.ru                     OK 2
+[19/20] kuhni-marsel.ru                     OK 1
+[20/20] kuhni-msk1.ru                       --
+
+Done: 17 sites, 40 emails

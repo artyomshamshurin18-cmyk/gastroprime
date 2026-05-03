@@ -1,4 +1,7 @@
 import { Controller, Delete, Get, Post, Patch, Body, Param, UseGuards, Query, UploadedFile, UseInterceptors, Res, Request } from "@nestjs/common"
+import { diskStorage } from "multer"
+import { extname, join } from "path"
+import { mkdirSync } from "fs"
 import { AuthGuard } from "@nestjs/passport"
 import { FileInterceptor } from "@nestjs/platform-express"
 import { AdminService } from "./admin.service"
@@ -302,4 +305,60 @@ export class AdminController {
   async deleteCompany(@Param("id") id: string) {
     return this.adminService.deleteCompany(id)
   }
+  @Post("companies/:id/documents")
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => {
+        const companyId = req.params.id
+        const dir = join(process.cwd(), 'uploads', 'company-docs', companyId)
+        mkdirSync(dir, { recursive: true })
+        cb(null, dir)
+      },
+      filename: (req, file, cb) => {
+        const ext = extname(file.originalname)
+        const name = `${Date.now()}-${file.originalname.replace(extname(file.originalname), '').replace(/[^a-zA-Z0-9а-яА-Я]/g, '_').slice(0, 50)}${ext}`
+        cb(null, name)
+      },
+    }),
+    limits: { fileSize: 50 * 1024 * 1024 },
+  }))
+  async uploadCompanyDocument(@Param("id") id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.adminService.uploadCompanyDocument(id, file)
+  }
+
+  @Get("companies/:id/documents")
+  async listCompanyDocuments(@Param("id") id: string) {
+    return this.adminService.listCompanyDocuments(id)
+  }
+
+  @Delete("companies/:id/documents/:filename")
+  async deleteCompanyDocument(@Param("id") id: string, @Param("filename") filename: string) {
+    return this.adminService.deleteCompanyDocument(id, filename)
+  }
+
+  @Post('users/:id/change-password')
+  async adminChangeUserPassword(@Request() req, @Param('id') id: string, @Body() body: { newPassword: string }) {
+    return this.adminService.adminChangePassword(req.user.userId, id, body.newPassword);
+  }
+
+  @Post('orders/:id/charge')
+  async chargeOrder(@Param('id') id: string) {
+    return this.adminService.chargeOrder(id);
+  }
+
+  @Post('orders/:id/defer')
+  async deferOrder(@Param('id') id: string) {
+    return this.adminService.deferOrder(id);
+  }
+  @Post('weekly-menus/:id/charge')
+  async chargeWeeklyMenu(@Param('id') id: string) {
+    return this.adminService.chargeWeeklyMenu(id);
+  }
+
+  @Post('weekly-menus/:id/defer')
+  async deferWeeklyMenu(@Param('id') id: string) {
+    return this.adminService.deferWeeklyMenu(id);
+  }
+
+
 }

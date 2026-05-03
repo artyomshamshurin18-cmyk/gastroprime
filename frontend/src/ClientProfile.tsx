@@ -15,6 +15,9 @@ export default function ClientProfile({ token, user, onUserUpdate }: { token: st
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" })
+  const [passwordSaving, setPasswordSaving] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState("")
 
   useEffect(() => {
     setForm({
@@ -132,17 +135,59 @@ export default function ClientProfile({ token, user, onUserUpdate }: { token: st
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
           <div style={{ background: '#f8f9fa', padding: 14, borderRadius: 8 }}>
-            <div style={{ color: '#666', marginBottom: 4 }}>Текущий баланс</div>
+            <div style={{ color: '#666', marginBottom: 4 }}>Дебетовый баланс</div>
             <strong>{user?.company?.balance ?? 0} ₽</strong>
           </div>
           <div style={{ background: '#f8f9fa', padding: 14, borderRadius: 8 }}>
-            <div style={{ color: '#666', marginBottom: 4 }}>Лимит на день</div>
+            <div style={{ color: '#666', marginBottom: 4 }}>Кредитный баланс</div>
+            <strong>{user?.company?.creditBalance ?? 0} ₽</strong>
+          </div>
+          <div style={{ background: "#f8f9fa", padding: 14, borderRadius: 8 }}>
+            <div style={{ color: "#666", marginBottom: 4 }}>Лимит на день</div>
             <strong>{user?.company?.dailyLimit ?? 0} ₽</strong>
           </div>
         </div>
 
         <button onClick={saveProfile} disabled={saving} style={{ background: '#007bff', color: 'white', border: 'none', borderRadius: 6, padding: '12px 18px', width: '100%' }}>
           {saving ? 'Сохранение...' : 'Сохранить профиль'}
+        </button>
+      </div>
+
+      <div style={{ background: "#fff", padding: 20, borderRadius: 8, boxShadow: "0 2px 4px rgba(0,0,0,0.08)", display: "grid", gap: 14, marginTop: 20 }}>
+        <h3 style={{ margin: 0 }}>Смена пароля</h3>
+        {passwordMessage && <div style={{ padding: 12, background: passwordMessage.includes("❌") ? "#f8d7da" : "#d4edda", marginBottom: 10, borderRadius: 6 }}>{passwordMessage}</div>}
+        <label style={{ display: "grid", gap: 6 }}>
+          <span>Текущий пароль</span>
+          <input type="password" value={passwordForm.currentPassword} onChange={(e) => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))} />
+        </label>
+        <label style={{ display: "grid", gap: 6 }}>
+          <span>Новый пароль</span>
+          <input type="password" value={passwordForm.newPassword} onChange={(e) => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))} />
+        </label>
+        <label style={{ display: "grid", gap: 6 }}>
+          <span>Подтвердите новый пароль</span>
+          <input type="password" value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))} />
+        </label>
+        <button onClick={async () => {
+          if (passwordForm.newPassword !== passwordForm.confirmPassword) { setPasswordMessage("❌ Пароли не совпадают"); return; }
+          if (passwordForm.newPassword.length < 4) { setPasswordMessage("❌ Пароль должен быть не менее 4 символов"); return; }
+          setPasswordSaving(true);
+          setPasswordMessage("");
+          try {
+            await axios.post(API_URL + "/auth/change-password", {
+              currentPassword: passwordForm.currentPassword,
+              newPassword: passwordForm.newPassword,
+            }, { headers: { Authorization: "Bearer " + token } });
+            setPasswordMessage("✅ Пароль успешно изменен");
+            setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+          } catch (err) {
+            const msg = (err as any)?.response?.data?.message || "Не удалось изменить пароль";
+            setPasswordMessage("❌ " + msg);
+          } finally {
+            setPasswordSaving(false);
+          }
+        }} disabled={passwordSaving} style={{ background: "#6c757d", color: "white", border: "none", borderRadius: 6, padding: "12px 18px", width: "100%" }}>
+          {passwordSaving ? "Сохранение..." : "Изменить пароль"}
         </button>
       </div>
     </div>

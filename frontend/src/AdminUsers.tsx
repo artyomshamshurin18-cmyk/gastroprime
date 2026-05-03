@@ -4,6 +4,7 @@ import axios from 'axios'
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 
 const roleLabels: Record<string, string> = {
+  CRM_OPERATOR: 'Оператор CRM',
   CLIENT: 'Сотрудник',
   MASTER_CLIENT: 'Координатор компании',
   MANAGER: 'Менеджер',
@@ -100,7 +101,7 @@ export default function AdminUsers({ token, currentUser }: { token: string, curr
   const [importPreview, setImportPreview] = useState<UserImportPreview | null>(null)
   const canManageAdminRoles = currentUser?.role !== 'MANAGER'
   const roleOptions = canManageAdminRoles
-    ? ['CLIENT', 'MASTER_CLIENT', 'MANAGER', 'ADMIN', 'SUPERADMIN']
+    ? ['CLIENT', 'MASTER_CLIENT', 'MANAGER', 'CRM_OPERATOR', 'ADMIN', 'SUPERADMIN']
     : ['CLIENT', 'MASTER_CLIENT']
 
   const loadData = async () => {

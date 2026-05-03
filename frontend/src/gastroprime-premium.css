@@ -1,0 +1,629 @@
+/* ============================================
+   GASTROPRIME — Премиум стилизация
+   Glassmorphism + анимации + микро-взаимодействия
+   Глобальный слой поверх существующих стилей
+   ============================================ */
+
+/* ---------- CSS Custom Properties ---------- */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --glass-blur: 16px;
+  --accent-gradient: linear-gradient(135deg, #ed3915 0%, #ff6a3d 50%, #ff8a5c 100%);
+  --accent-glow: 0 0 20px rgba(237, 57, 21, 0.3);
+  --accent-color: #ed3915;
+  --transition-spring: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --card-radius: 16px;
+  --bg-gradient: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 50%, #e8ecf8 100%);
+}
+
+/* ---------- Global Background ---------- */
+body {
+  background: var(--bg-gradient) !important;
+  min-height: 100vh;
+}
+
+/* ---------- Glassmorphism Base ---------- */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* ---------- Sidebar / Navigation ---------- */
+/* Если сайдбар с классом sidebar, nav, или aside */
+aside, 
+nav[class*="sidebar"],
+div[class*="sidebar"],
+nav[class*="nav"],
+div[class*="navigation"] {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.5) !important;
+  transition: var(--transition-smooth);
+}
+
+/* ---------- Cards (глобально) ---------- */
+div[class*="card"],
+div[class*="Card"],
+section[class*="card"],
+div[class*="dashboard"],
+section[class*="dashboard"] {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-radius: var(--card-radius) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  transition: var(--transition-smooth);
+}
+
+div[class*="card"]:hover,
+div[class*="Card"]:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px);
+}
+
+/* ---------- Tables ---------- */
+table, 
+div[class*="table"],
+div[class*="Table"] {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--card-radius) !important;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+/* Table rows hover */
+tr:hover,
+div[class*="row"]:hover {
+  background: rgba(237, 57, 21, 0.03) !important;
+  transition: background 0.2s ease;
+}
+
+/* ---------- Buttons (глобально) ---------- */
+button:not(.gp-modal-close) {
+  transition: var(--transition-spring) !important;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+}
+
+button:hover:not(.gp-modal-close) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+button:active:not(.gp-modal-close) {
+  transform: scale(0.97);
+}
+
+/* Accent buttons (red/orange gradient) */
+button[style*="background: linear-gradient"],
+button[style*="background:linear-gradient"] {
+  box-shadow: 0 4px 16px rgba(237, 57, 21, 0.25) !important;
+}
+
+button[style*="background: linear-gradient"]:hover,
+button[style*="background:linear-gradient"]:hover {
+  box-shadow: 0 8px 28px rgba(237, 57, 21, 0.35) !important;
+}
+
+/* ---------- Inputs (глобально) ---------- */
+input, select, textarea {
+  border-radius: 12px !important;
+  border: 1px solid #e5e7eb !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  transition: var(--transition-smooth) !important;
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 3px rgba(237, 57, 21, 0.12) !important;
+  outline: none !important;
+}
+
+/* ---------- Modals (глобально) ---------- */
+div[class*="modal"],
+div[class*="Modal"],
+div[class*="overlay"],
+div[class*="Overlay"] {
+  animation: fadeIn 0.2s ease-out;
+}
+
+div[class*="modal"] > div,
+div[class*="Modal"] > div {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15) !important;
+  animation: modalEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- Alerts / Notifications ---------- */
+div[class*="alert"],
+div[class*="Alert"],
+div[class*="toast"],
+div[class*="Toast"],
+div[class*="notification"] {
+  border-radius: 14px !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+  animation: slideUp 0.3s ease-out !important;
+}
+
+/* ---------- Tabs ---------- */
+div[class*="tab"],
+div[class*="Tab"] {
+  transition: var(--transition-smooth);
+}
+div[class*="tab"]:hover,
+div[class*="Tab"]:hover {
+  color: var(--accent-color) !important;
+}
+
+/* ---------- Progress Bars ---------- */
+div[class*="progress"],
+div[class*="Progress"],
+div[class*="bar"],
+div[class*="Bar"] {
+  border-radius: 10px !important;
+  overflow: hidden;
+}
+
+/* ---------- Scrollbar (глобально) ---------- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* ---------- Animations ---------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ---------- Skeleton loading ---------- */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.5) 25%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.5) 75%) !important;
+  background-size: 200% 100% !important;
+  animation: shimmer 1.5s ease-in-out infinite !important;
+  border-radius: 8px !important;
+}
+
+/* ---------- Page transition ---------- */
+div[id="root"] > * {
+  animation: fadeSlideDown 0.4s ease-out;
+}
+
+/* ---------- Navigation hover micro-interaction ---------- */
+a, 
+a[class*="link"],
+a[class*="Link"],
+span[class*="link"],
+span[class*="Link"] {
+  transition: var(--transition-smooth);
+}
+a:hover {
+  color: var(--accent-color) !important;
+  opacity: 0.85;
+}
+
+/* ---------- Ripple effect base ---------- */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+}
+.ripple-btn::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  width: 100px;
+  height: 100px;
+  margin-left: -50px;
+  margin-top: -50px;
+  transform: scale(0);
+  opacity: 1;
+  pointer-events: none;
+}
+.ripple-btn:active::after {
+  animation: rippleAnim 0.6s ease-out;
+}
+
+@keyframes rippleAnim {
+  from {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ---------- Staggered animations ---------- */
+div[class*="card"]:nth-child(1),
+div[class*="Card"]:nth-child(1) { animation: slideUp 0.3s ease-out both; animation-delay: 0ms; }
+div[class*="card"]:nth-child(2),
+div[class*="Card"]:nth-child(2) { animation: slideUp 0.3s ease-out both; animation-delay: 50ms; }
+div[class*="card"]:nth-child(3),
+div[class*="Card"]:nth-child(3) { animation: slideUp 0.3s ease-out both; animation-delay: 100ms; }
+div[class*="card"]:nth-child(4),
+div[class*="Card"]:nth-child(4) { animation: slideUp 0.3s ease-out both; animation-delay: 150ms; }
+div[class*="card"]:nth-child(5),
+div[class*="Card"]:nth-child(5) { animation: slideUp 0.3s ease-out both; animation-delay: 200ms; }
+div[class*="card"]:nth-child(6),
+div[class*="Card"]:nth-child(6) { animation: slideUp 0.3s ease-out both; animation-delay: 250ms; }
+
+/* ===== ПЕРЕОПРЕДЕЛЕНИЯ С !IMPORTANT ===== */
+/* Это гарантированно перебьёт старые стили theme.css */
+
+/* Кнопки с градиентом */
+.gp-btn--primary,
+button[class*="--primary"],
+.login-btn {
+  background: linear-gradient(135deg, #ed3915 0%, #ff6a3d 50%, #ff8a5c 100%) !important;
+  box-shadow: 0 4px 16px rgba(237, 57, 21, 0.25) !important;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  border-radius: 14px !important;
+}
+.gp-btn--primary:hover,
+button[class*="--primary"]:hover {
+  box-shadow: 0 8px 28px rgba(237, 57, 21, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Карточки */
+.gp-card,
+.gp-surface-card,
+.gp-stat-card,
+.help-card,
+.dashboard-card {
+  border-radius: 20px !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.gp-card:hover,
+.gp-surface-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Заголовок */
+.gp-header {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid rgba(237, 57, 21, 0.1) !important;
+}
+
+/* Панель логина */
+.gp-login-card {
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.12) !important;
+  border-radius: 24px !important;
+}
+
+/* Вкладки */
+.gp-tab {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 999px !important;
+}
+.gp-tab--active {
+  background: linear-gradient(135deg, #ed3915 0%, #ff6a3d 100%) !important;
+  box-shadow: 0 4px 12px rgba(237, 57, 21, 0.25) !important;
+}
+
+/* Инпуты */
+.gp-login-card input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"] {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 12px !important;
+}
+.gp-login-card input:focus,
+input:focus {
+  border-color: #ed3915 !important;
+  box-shadow: 0 0 0 3px rgba(237, 57, 21, 0.12) !important;
+}
+
+/* Модальные окна */
+div[class*="overlay"],
+div[class*="modal-backdrop"] {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Плавные появления */
+.gp-content > *,
+.gp-landing-hero,
+.gp-landing-section {
+  animation: fadeSlideDown 0.4s ease-out !important;
+}
+
+/* ============================================
+   МОБИЛЬНАЯ АДАПТАЦИЯ — Responsive
+   Все страницы, все экраны
+   ============================================ */
+
+/* ---------- Планшеты и большие телефоны ---------- */
+@media (max-width: 1024px) {
+  .gp-content { padding: 20px 18px; }
+  .gp-tabs { padding: 14px 18px 0; gap: 8px; }
+  .crm-board { gap: 12px; }
+  .crm-column { min-width: 220px; }
+  .crm-info-grid { grid-template-columns: 1fr; }
+  .crm-form-row { flex-direction: column; gap: 0; }
+  .crm-header { flex-direction: column; gap: 12px; }
+  .crm-header input { min-width: 100% !important; }
+  .crm-dashboard-bar { flex-wrap: wrap; gap: 8px; }
+  .gp-grid-cards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .gp-help-shots-grid { grid-template-columns: 1fr; }
+  .gp-help-steps-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---------- Телефоны (до 768px) ---------- */
+@media (max-width: 768px) {
+  /* Shell */
+  .gp-shell { min-height: auto; }
+
+  /* Header / Topbar */
+  .gp-header {
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+    align-items: stretch;
+  }
+  .gp-header-right {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .gp-brand-title { font-size: 18px; }
+  .gp-brand img { height: 32px; }
+
+  /* Tabs */
+  .gp-tabs {
+    padding: 10px 14px 0;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+  .gp-tab {
+    padding: 8px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Content area */
+  .gp-content { padding: 14px 12px 24px; }
+
+  /* Page title */
+  .gp-page-title { font-size: 24px; }
+  .gp-page-lead { font-size: 14px; }
+
+  /* Landing */
+  .gp-landing-hero { flex-direction: column; text-align: center; }
+  .gp-landing-title { font-size: 28px; }
+  .gp-landing-copy { font-size: 14px; }
+  .gp-landing-actions { flex-direction: column; align-items: center; }
+  .gp-landing-grid { grid-template-columns: 1fr; }
+  .gp-landing-food-grid { grid-template-columns: 1fr 1fr; }
+  .gp-landing-showcase { flex-direction: column; }
+  .gp-landing-login-shell { padding: 12px; }
+
+  /* Login */
+  .gp-login-card { padding: 24px 20px; border-radius: 20px !important; }
+  .gp-login-title { font-size: 22px; }
+  .gp-login-wrap { padding: 16px; }
+
+  /* CRM */
+  .crm-container { padding: 12px; }
+  .crm-board {
+    flex-direction: column;
+    overflow-x: visible;
+    gap: 12px;
+  }
+  .crm-column {
+    min-width: unset;
+    max-height: none;
+  }
+  .crm-column-body { max-height: 300px; }
+  .crm-header {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+  .crm-header > div:last-child {
+    flex-direction: column;
+    width: 100%;
+  }
+  .crm-header input,
+  .crm-header select {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+  .crm-header button { width: 100%; }
+  .crm-dashboard-bar { padding: 14px 16px; gap: 6px; }
+  .crm-stat-chip { min-width: 55px; padding: 6px 12px; }
+  .crm-stat-count { font-size: 18px; }
+
+  /* CRM Info grid */
+  .crm-info-grid { grid-template-columns: 1fr; }
+  .crm-form-row { flex-direction: column; gap: 0; }
+  .crm-info-tab button { font-size: 11px; padding: 6px 10px; }
+
+  /* Cards */
+  .gp-card { border-radius: 16px !important; }
+  .gp-stat-card { padding: 12px; }
+  .gp-stat-card strong { font-size: 20px; }
+
+  /* Toolbar */
+  .gp-toolbar { flex-direction: column; align-items: stretch; }
+
+  /* Grid cards */
+  .gp-grid-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+  /* Tables — горизонтальный скролл */
+  .gp-surface-card { overflow-x: auto; }
+  table { font-size: 12px; }
+  th, td { padding: 8px 6px !important; white-space: nowrap; }
+
+  /* Help center */
+  .gp-help-page { gap: 14px; }
+  .gp-help-title { font-size: 26px; }
+  .gp-help-promise-grid { grid-template-columns: 1fr; }
+  .gp-help-steps-grid { grid-template-columns: 1fr; }
+  .gp-help-shots-grid { grid-template-columns: 1fr; }
+
+  /* Chat */
+  .gp-chat-main { flex-direction: column; }
+  .gp-chat-sidebar { width: 100%; border-right: none; border-bottom: 1px solid rgba(0,0,0,0.06); }
+
+  /* Modals */
+  .gp-modal { margin: 10px; width: auto !important; max-width: none !important; }
+  .gp-modal-header { padding: 16px; }
+  .gp-modal-header h2 { font-size: 16px; }
+  .gp-modal-tabs { padding: 0 14px; }
+  .gp-modal-tabs > div { padding: 10px 14px !important; font-size: 12px; }
+  .gp-modal-body { padding: 0 14px 14px !important; }
+
+  /* Section note */
+  .gp-section-note { font-size: 13px; padding: 10px 12px; }
+
+  /* Soft block */
+  .gp-soft-block { border-radius: 12px; }
+
+  /* Stat cards inline */
+  .crm-stat-chip { flex: 1; min-width: 0; }
+
+  /* Task widget */
+  .crm-task-item { flex-wrap: wrap; }
+
+  /* Top pill */
+  .gp-top-pill { font-size: 12px; padding: 6px 10px; }
+
+  /* Menu / Admin */
+  .gp-tabs--client { overflow-x: auto; flex-wrap: nowrap; }
+
+  /* Install card */
+  .gp-install-card { flex-direction: column; text-align: center; }
+}
+
+/* ---------- Маленькие телефоны (до 480px) ---------- */
+@media (max-width: 480px) {
+  .gp-content { padding: 10px 8px 20px; }
+  .gp-page-title { font-size: 20px; }
+  .gp-grid-cards { grid-template-columns: 1fr; }
+  .gp-landing-food-grid { grid-template-columns: 1fr; }
+  .gp-brand-title { font-size: 16px; }
+  .gp-header { padding: 10px 12px; }
+  .gp-tabs { padding: 8px 10px 0; }
+  .gp-tab { padding: 6px 12px; font-size: 11px; }
+  .crm-container { padding: 8px; }
+  .crm-header { padding: 10px 12px; }
+  .crm-stat-chip { padding: 4px 8px; }
+  .crm-stat-count { font-size: 16px; }
+  .crm-stat-label { font-size: 9px; }
+  .gp-modal { margin: 6px; border-radius: 18px !important; }
+  .gp-login-card { padding: 18px 14px; }
+  .gp-login-title { font-size: 20px; }
+}
+
+/* ---------- Touch-optimisation ---------- */
+@media (pointer: coarse) {
+  .crm-card,
+  .gp-tab,
+  .gp-btn,
+  button,
+  a {
+    min-height: 44px;
+  }
+  .crm-card-actions { opacity: 1; }
+  .crm-status-select { min-height: 40px; font-size: 14px; }
+  input, select, textarea {
+    font-size: 16px !important; /* Предотвращает зум на iOS */
+  }
+}
+
+/* ---------- Landscape на телефонах ---------- */
+@media (max-height: 500px) {
+  .gp-header { padding: 8px 12px; }
+  .gp-header-right { gap: 6px; }
+  .gp-content { padding: 8px 12px; }
+  .crm-column { max-height: calc(100vh - 140px); }
+  .crm-column-body { max-height: calc(100vh - 200px); }
+}

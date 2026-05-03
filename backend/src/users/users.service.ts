@@ -705,7 +705,7 @@ export class UsersService {
       summary: {
         employeesCount: employees.length,
         selectedCount: employees.filter(employee => employee.hasSelection).length,
-        draftCount: employees.filter(employee => employee.hasSelection && employee.weeklyStatus !== 'CONFIRMED').length,
+        draftCount: employees.filter(employee => employee.hasSelection && (employee.weeklyStatus === 'DRAFT' || employee.weeklyStatus === null)).length,
         confirmedCount: employees.filter(employee => employee.hasSelection && employee.weeklyStatus === 'CONFIRMED').length,
         missingCount: employees.filter(employee => employee.attendanceStatus === 'OFFICE' && !employee.hasSelection).length,
         nonOfficeCount: employees.filter(employee => employee.attendanceStatus !== 'OFFICE').length,
@@ -733,7 +733,7 @@ export class UsersService {
         date: { gte: startDate, lte: endDate },
         weeklyMenu: {
           user: { companyId: context.companyId },
-          status: { in: ['DRAFT', 'CONFIRMED'] },
+          status: { in: ['DRAFT', 'CONFIRMED', 'PAID', 'DEFERRED'] },
         },
       },
       orderBy: [{ date: 'asc' }],
@@ -799,7 +799,13 @@ export class UsersService {
       entry.totalPortions += totalPortions
       entry.totalAmount += totalAmount
       if (selection.weeklyMenu.status === 'CONFIRMED') entry.confirmedCount += 1
-      else entry.draftCount += 1
+      else if (selection.weeklyMenu.status === 'PAID') {
+        if (!entry.paidCount) entry.paidCount = 0;
+        entry.paidCount += 1;
+      } else if (selection.weeklyMenu.status === 'DEFERRED') {
+        if (!entry.deferredCount) entry.deferredCount = 0;
+        entry.deferredCount += 1;
+      } else entry.draftCount += 1
       entry.employees.push({
         userId: selection.weeklyMenu.user.id,
         userName: employeeName,
@@ -2265,4 +2271,89 @@ export class UsersService {
       buffer: await renderInvoicePdf(invoice),
     };
   }
+
+  async cancelWeeklyMenuRequest(coordinatorUserId: string, weeklyMenuId: string) {
+    const context = await this.getCoordinatorContext(coordinatorUserId);
+    this.ensureCompanyStatusAllowed(context.company?.status, ['ACTIVE'], 'Отмена заявки доступна только активной компании');
+
+    // Ensure the weekly menu belongs to this company
+    const menu = await this.prisma.weeklyMenu.findUnique({
+      where: { id: weeklyMenuId },
+      include: {
+        user: { select: { companyId: true } },
+        selections: {
+          include: {
+            items: { include: { dish: { select: { id: true, name: true, price: true, categoryId: true } } } }
+          }
+        }
+      }
+    });
+
+    if (!menu) throw new NotFoundException('Заявка не найдена');
+    if (menu.user.companyId !== context.companyId) {
+      throw new BadRequestException('Эта заявка не принадлежит вашей компании');
+    }
+
+    // You can only cancel PAID or DEFERRED menus
+    if (menu.status !== 'PAID' && menu.status !== 'DEFERRED') {
+      throw new BadRequestException('Можно отменить только оплаченные заявки или с отсрочкой платежа');
+    }
+
+    console.log('[CANCEL] menuId:', weeklyMenuId, 'companyId:', context.companyId, 'name:', context.company?.name, 'status:', menu.status, 'company balance:', (await this.prisma.company.findUnique({ where: { id: context.companyId }, select: { balance: true } }))?.balance);
+
+    console.log('[CANCEL] calculating refund...');
+    // Calculate total to refund
+    const priceMap = await getCompanyCategoryPriceMap(this.prisma, context.companyId);
+    let totalAmount = 0;
+    for (const sel of menu.selections) {
+      for (const item of sel.items) {
+        const price = getResolvedCompanyDishPrice(item.dish, priceMap);
+        totalAmount += price * item.quantity;
+        console.log('[CANCEL] dish:', item.dish?.name, 'basePrice:', item.dish?.price, 'resolvedPrice:', price, 'qty:', item.quantity);
+      }
+    }
+    console.log('[CANCEL] totalAmount CALCULATED:', totalAmount);
+
+    // If PAID — refund to balance, if DEFERRED — subtract from credit
+    await this.prisma.$transaction(async (tx) => {
+      if (menu.status === 'PAID') {
+        await tx.company.update({
+          where: { id: context.companyId },
+          data: { balance: { increment: totalAmount } }
+        });
+      } else if (menu.status === 'DEFERRED') {
+        // For deferred, deduct from creditBalance (assuming it was promised)
+        await tx.company.update({
+          where: { id: context.companyId },
+          data: { creditBalance: { decrement: totalAmount } }
+        });
+      }
+
+      await tx.weeklyMenu.update({
+        where: { id: weeklyMenuId },
+        data: { status: 'DRAFT' }
+      });
+
+      // Find and cancel associated order if any
+      const order = await tx.order.findFirst({
+        where: { comment: 'Списание заявки на меню', userId: menu.userId, status: 'PAID' },
+        orderBy: { createdAt: 'desc' }
+      });
+      if (order) {
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: 'CANCELLED' }
+        });
+      }
+    });
+
+    return {
+      success: true,
+      message: menu.status === 'PAID'
+        ? 'Заявка отменена. Средства возвращены на баланс'
+        : 'Заявка отменена. Отсрочка аннулирована',
+      refundedAmount: totalAmount
+    };
+  }
+
 }

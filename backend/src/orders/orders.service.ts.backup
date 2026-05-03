@@ -1,0 +1,129 @@
+import { Injectable, BadRequestException } from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
+
+@Injectable()
+export class OrdersService {
+  constructor(private prisma: PrismaService) {}
+
+  async getOrdersByUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { company: true }
+    })
+
+    const company = user?.company
+
+    if (!company) {
+      return []
+    }
+
+    return this.prisma.order.findMany({
+      where: { companyId: company.id },
+      include: {
+        items: { 
+          include: { 
+            dish: true,
+            garnishDish: true 
+          } 
+        },
+        company: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+  }
+
+  async createOrder(userId: string, data: any) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { company: true }
+    })
+
+    const company = user?.company
+
+    if (!company) {
+      throw new BadRequestException('Company not found')
+    }
+
+    if (user?.role !== 'ADMIN' && user?.role !== 'SUPERADMIN') {
+      throw new BadRequestException('Свободный заказ отключен. Используйте запланированное меню.')
+    }
+
+    // Получаем все блюда для расчёта суммы (основные и гарниры)
+    const allDishIds = data.items.flatMap((item: any) => [
+      item.dishId,
+      ...(item.garnishDishId ? [item.garnishDishId] : [])
+    ]).filter(Boolean)
+    
+    const dishes = await this.prisma.dish.findMany({
+      where: { id: { in: allDishIds } }
+    })
+
+    const dishMap = new Map(dishes.map(d => [d.id, d]))
+
+    // Считаем общую сумму
+    let totalAmount = 0
+    const orderItems = data.items.map((item: any) => {
+      const dish = dishMap.get(item.dishId)
+      if (!dish) {
+        throw new BadRequestException()
+      }
+      
+      let itemTotal = dish.price * item.quantity
+      
+      // Добавляем стоимость гарнира, если есть
+      if (item.garnishDishId) {
+        const garnishDish = dishMap.get(item.garnishDishId)
+        if (!garnishDish) {
+          throw new BadRequestException()
+        }
+        itemTotal += garnishDish.price * item.quantity
+      }
+      
+      totalAmount += itemTotal
+      
+      return {
+        dishId: item.dishId,
+        garnishDishId: item.garnishDishId || null,
+        quantity: item.quantity,
+        unitPrice: dish.price + (item.garnishDishId ? dishMap.get(item.garnishDishId)!.price : 0)
+      }
+    })
+
+    // Проверяем лимит
+    if (company.limit && totalAmount > company.limit) {
+      throw new BadRequestException('Order amount exceeds company limit')
+    }
+
+    // Генерируем номер заказа
+    const date = new Date()
+    const orderNumber = 
+
+    // Создаём заказ
+    const order = await this.prisma.order.create({
+      data: {
+        orderNumber,
+        userId,
+        companyId: company.id,
+        status: 'PENDING',
+        totalAmount,
+        deliveryDate: new Date(data.deliveryDate),
+        deliveryTime: data.deliveryTime,
+        comment: data.comment,
+        items: {
+          create: orderItems
+        }
+      },
+      include: {
+        items: { 
+          include: { 
+            dish: true,
+            garnishDish: true 
+          } 
+        },
+        company: true
+      }
+    })
+
+    return order
+  }
+}

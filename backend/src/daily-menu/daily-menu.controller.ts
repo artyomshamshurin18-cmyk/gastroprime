@@ -14,7 +14,7 @@ export class DailyMenuController {
   }
 
   @Get('by-range')
-  async getByRange(@Request() req, @Query('start') start: string, @Query('end') end: string) {
+  async getByRange(@Request() req, @Query("start") start: string, @Query("end") end: string) {
     return this.dailyMenuService.getByRange(req.user.userId, start, end);
   }
 

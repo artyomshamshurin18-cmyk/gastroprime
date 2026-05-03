@@ -18,6 +18,7 @@ import ClientInvoices from './ClientInvoices'
 import AdminUsers from './AdminUsers'
 import ClientManagerChat from './ClientManagerChat'
 import ClientProfile from './ClientProfile'
+import DriverDashboard from './DriverDashboard'
 import GuestInviteChat from './GuestInviteChat'
 import HelpCenter from './HelpCenter'
 import ManagerBoard from './ManagerBoard'
@@ -411,6 +412,7 @@ function App() {
   if (!token || !user) return <Login onLogin={handleLogin} />
   if (user.role === 'ADMIN' || user.role === 'SUPERADMIN') return <AdminDashboard user={user} token={token} onLogout={handleLogout} />
   if (user.role === 'MANAGER') return <ManagerDashboard user={user} token={token} onLogout={handleLogout} onImpersonate={handleImpersonate} />
+  if (user.role === 'DRIVER') return <DriverDashboard user={user} token={token} onLogout={handleLogout} />
   return <ClientDashboard user={user} token={token} onLogout={handleLogout} onUserUpdate={handleUserUpdate} impersonatorUser={impersonatorUser} onRestoreSession={handleRestoreSession} />
 }
 

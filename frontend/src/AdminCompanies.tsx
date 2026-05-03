@@ -17,6 +17,13 @@ const priceSegmentOptions = [
   { value: 'PRIME', label: 'Прайм' },
 ]
 
+const companyStatusColors: Record<string, string> = {
+  ACTIVE: '#28a745',
+  ONBOARDING: '#ffc107',
+  CRM_LEAD: '#17a2b8',
+  ARCHIVED: '#6c757d',
+  BLOCKED: '#dc3545',
+};
 const companyStatusLabels: Record<string, string> = {
   ONBOARDING: 'В стадии подключения',
   ACTIVE: 'В работе',
@@ -34,6 +41,7 @@ interface Company {
   billingDetails?: string
   entryConditions?: string
   routeName?: string
+  accountNumber?: string
   deliveryTime?: string
   peopleCount?: number | null
   notes?: string
@@ -131,6 +139,8 @@ export default function AdminCompanies({ token }: { token: string }) {
   const [savingId, setSavingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const [searchQuery, setSearchQuery] = useState();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [billingSettings, setBillingSettings] = useState<BillingSettingsDraft>(emptyBillingSettings)
   const [savingBillingSettings, setSavingBillingSettings] = useState(false)
 
@@ -393,31 +403,52 @@ export default function AdminCompanies({ token }: { token: string }) {
       ) : (
         companies.map(company => {
           const draft = drafts[company.id]
-          if (!draft) return null
-
+          const isExpanded = expandedId === company.id;
+          const color = companyStatusColors[draft.status] || '#888';
+          const label = companyStatusLabels[draft.status] || draft.status;
           return (
-            <div key={company.id} className="gp-surface-card" style={{ padding: 20, marginBottom: 15 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-                <div>
-                  <strong>{company.name}</strong>
-                  <div className="gp-muted-text">{companyStatusLabels[draft.status] || draft.status} • Пользователей: {company._count?.users || 0}, заказов: {company._count?.orders || 0}</div>
+            <div key={company.id} className="gp-surface-card" style={{ marginBottom: 8, overflow: 'hidden' }}>
+              <div
+                onClick={() => setExpandedId(isExpanded ? null : company.id)}
+                style={{
+                  padding: '14px 20px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  userSelect: 'none',
+                  background: isExpanded ? '#fafafa' : '#fff',
+                  borderBottom: isExpanded ? '1px solid #eee' : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                  <strong style={{ fontSize: 15 }}>{company.name}</strong>
+                  {company.accountNumber && <span style={{ fontSize: 12, color: '#999', fontFamily: 'monospace' }}>{company.accountNumber}</span>}
+                  <span style={{ fontSize: 12, color, fontWeight: 600 }}>{'\u25cf'} {label}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#999', flexShrink: 0 }}>
+                  <span>{company._count?.users || 0} чел.</span>
+                  <span style={{ fontSize: 11 }}>{isExpanded ? '\u25b2' : '\u25bc'}</span>
                 </div>
               </div>
 
-              {renderFields(
-                draft,
-                (field, value) => updateDraft(company.id, field, value),
-                (categoryId, value) => updateCategoryPrice(draft, categoryId, value, (next) => setDrafts(prev => ({ ...prev, [company.id]: next }))),
+              {isExpanded && (
+                <div style={{ padding: '16px 20px' }}>
+                  {renderFields(
+                    draft,
+                    (field, value) => updateDraft(company.id, field, value),
+                    (categoryId, value) => updateCategoryPrice(draft, categoryId, value, (next) => setDrafts(prev => ({ ...prev, [company.id]: next }))),
+                  )}
+                  <div style={{ display: 'flex', gap: 10, marginTop: 15, flexWrap: 'wrap' }}>
+                    <button onClick={() => saveCompany(company.id)} disabled={savingId === company.id} style={{ background: '#007bff', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
+                      {savingId === company.id ? 'Сохранение...' : 'Сохранить изменения'}
+                    </button>
+                    <button onClick={() => deleteCompany(company.id, company.name)} disabled={deletingId === company.id} style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
+                      {deletingId === company.id ? 'Удаляю...' : 'Удалить компанию'}
+                    </button>
+                  </div>
+                </div>
               )}
-
-              <div style={{ display: 'flex', gap: 10, marginTop: 15, flexWrap: 'wrap' }}>
-                <button onClick={() => saveCompany(company.id)} disabled={savingId === company.id} style={{ background: '#007bff', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
-                  {savingId === company.id ? 'Сохранение...' : 'Сохранить изменения'}
-                </button>
-                <button onClick={() => deleteCompany(company.id, company.name)} disabled={deletingId === company.id} style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
-                  {deletingId === company.id ? 'Удаляю...' : 'Удалить компанию'}
-                </button>
-              </div>
             </div>
           )
         })

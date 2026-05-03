@@ -1,0 +1,3 @@
+ALTER TABLE "WeeklyMenu"
+ADD COLUMN "chargedAt" TIMESTAMP(3),
+ADD COLUMN "chargedAmount" INTEGER NOT NULL DEFAULT 0;

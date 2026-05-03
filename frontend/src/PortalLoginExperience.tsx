@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const showcaseCards = [
   {
     title: 'Сотрудник выбирает питание за минуту',
@@ -58,6 +60,8 @@ export default function PortalLoginExperience({
   onEmailChange,
   onPasswordChange,
   onLogin,
+  onErrorClear,
+  onRegister,
 }: {
   brandLogoUrl: string
   email: string
@@ -67,7 +71,18 @@ export default function PortalLoginExperience({
   onEmailChange: (value: string) => void
   onPasswordChange: (value: string) => void
   onLogin: () => void
+  onErrorClear: () => void
+  onRegister: (data: { companyName: string; firstName: string; phone: string }) => void
 }) {
+  const [showRegister, setShowRegister] = useState(false)
+  const [companyName, setCompanyName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [phone, setPhone] = useState('')
+
+  const handleRegister = () => {
+    onRegister({ companyName, firstName, phone })
+  }
+
   return (
     <div className="gp-landing">
       <section className="gp-landing-hero">
@@ -85,7 +100,7 @@ export default function PortalLoginExperience({
         <div className="gp-landing-grid">
           <div className="gp-landing-copy">
             <div className="gp-landing-kicker">Корпоративное питание без чатов, Excel и потерь</div>
-            <h1 className="gp-landing-title">Сильный B2B-портал, где сотрудники быстро выбирают питание, а компания полностью контролирует заявки, бюджет и доступ.</h1>
+            <h1 className="gp-landing-title">B2B-портал, где сотрудники быстро выбирают питание, а компания полностью контролирует заявки, бюджет и доступ.</h1>
             <p className="gp-landing-lead">
               Один кабинет для сотрудников, координатора и администратора. Меньше ручной координации, меньше ошибок,
               больше прозрачности по лимитам, счетам, статусам и ежедневному спросу.
@@ -102,29 +117,93 @@ export default function PortalLoginExperience({
           </div>
 
           <div className="gp-landing-login-shell">
-            <div className="gp-card gp-login-card gp-login-card--landing">
-              <div className="gp-login-card__badge">Вход в систему</div>
-              <h2 className="gp-login-title">Единый кабинет корпоративного питания</h2>
-              <p className="gp-login-subtitle">Для сотрудников, координаторов и администраторов компании.</p>
-              {error && <div className="gp-login-error">{error}</div>}
-              <div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 6 }}>Email</label>
-                  <input type="email" value={email} onChange={(e) => onEmailChange(e.target.value)} />
+            {showRegister ? (
+              <div className="gp-card gp-login-card gp-login-card--landing" style={{ minHeight: 420 }}>
+                <div style={{ textAlign: 'right', marginBottom: 4 }}>
+                  <button
+                    onClick={() => setShowRegister(false)}
+                    style={{ background: 'none', border: 'none', color: '#e65100', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
+                  >
+                    ← Вход
+                  </button>
                 </div>
-                <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: 'block', marginBottom: 6 }}>Пароль</label>
-                  <input type="password" value={password} onChange={(e) => onPasswordChange(e.target.value)} />
+                <div className="gp-login-card__badge">Регистрация компании</div>
+                <h2 className="gp-login-title">Подключите компанию</h2>
+                <p className="gp-login-subtitle">Создайте компанию и станьте её координатором.</p>
+                {error && <div className="gp-login-error">{error}</div>}
+                <div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Email *</label>
+                    <input type="email" value={email} onChange={(e) => onEmailChange(e.target.value)} required />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Пароль *</label>
+                    <input type="password" value={password} onChange={(e) => onPasswordChange(e.target.value)} required minLength={6} />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Название компании *</label>
+                    <input type="text" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Ваше имя</label>
+                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                  </div>
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Телефон</label>
+                    <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  </div>
+                  <button className="gp-btn gp-btn--primary gp-btn--full" onClick={handleRegister} disabled={loading}>
+                    {loading ? 'Регистрация...' : 'Зарегистрировать компанию'}
+                  </button>
                 </div>
-                <button className="gp-btn gp-btn--primary gp-btn--full" onClick={onLogin} disabled={loading}>
-                  {loading ? 'Вход...' : 'Войти'}
+                <div className="gp-login-mini-features" style={{ marginTop: 12 }}>
+                  <div>• Автоматическое создание компании</div>
+                  <div>• Роль координатора с полным доступом</div>
+                  <div>• Можно добавить сотрудников</div>
+                </div>
+              </div>
+            ) : (
+              <div className="gp-card gp-login-card gp-login-card--landing">
+                <div className="gp-login-card__badge">Вход в систему</div>
+                <h2 className="gp-login-title">Единый кабинет корпоративного питания</h2>
+                <p className="gp-login-subtitle">Для сотрудников, координаторов и администраторов компании.</p>
+                {error && <div className="gp-login-error">{error}</div>}
+                <div>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ display: 'block', marginBottom: 6 }}>Email</label>
+                    <input type="email" value={email} onChange={(e) => onEmailChange(e.target.value)} />
+                  </div>
+                  <div style={{ marginBottom: 18 }}>
+                    <label style={{ display: 'block', marginBottom: 6 }}>Пароль</label>
+                    <input type="password" value={password} onChange={(e) => onPasswordChange(e.target.value)} />
+                  </div>
+                  <button className="gp-btn gp-btn--primary gp-btn--full" onClick={onLogin} disabled={loading}>
+                    {loading ? 'Вход...' : 'Войти'}
+                  </button>
+                </div>
+                <div className="gp-login-mini-features">
+                  <div>• Плановое меню и заявки</div>
+                  <div>• Аналитика по компании</div>
+                  <div>• Счета, лимиты и сверка</div>
+                </div>
+              </div>
+            )}
+            <div style={{ textAlign: 'center', marginTop: 12 }}>
+              {showRegister ? (
+                <button
+                  onClick={() => setShowRegister(false)}
+                  style={{ background: 'none', border: 'none', color: '#e65100', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
+                >
+                  Назад ко входу
                 </button>
-              </div>
-              <div className="gp-login-mini-features">
-                <div>• Плановое меню и заявки</div>
-                <div>• Аналитика по компании</div>
-                <div>• Счета, лимиты и сверка</div>
-              </div>
+              ) : (
+                <button
+                  onClick={() => { setShowRegister(true); onErrorClear(); }}
+                  style={{ background: 'none', border: 'none', color: '#e65100', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
+                >
+                  Зарегистрировать компанию
+                </button>
+              )}
             </div>
           </div>
         </div>

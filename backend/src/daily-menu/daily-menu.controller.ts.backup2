@@ -1,0 +1,33 @@
+import { Controller, Get, Post, Delete, Body, Param, Query, Request, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { DailyMenuService } from './daily-menu.service';
+import { AdminGuard } from '../common/admin.guard';
+
+@Controller('daily-menu')
+@UseGuards(AuthGuard('jwt'))
+export class DailyMenuController {
+  constructor(private dailyMenuService: DailyMenuService) {}
+
+  @Get('by-date')
+  async getByDate(@Request() req, @Query('date') date: string) {
+    return this.dailyMenuService.getByDate(req.user.userId, date);
+  }
+
+  @Get('range')
+  async getByRange(@Request() req, @Query('startDate') startDate: string, @Query('endDate') endDate: string) {
+    return this.dailyMenuService.getByDateRange(req.user.userId, startDate, endDate);
+  }
+
+  @Post()
+  @UseGuards(AdminGuard)
+  async createOrUpdate(@Body() data: { date: string; items: { dishId: string; maxQuantity: number; sortOrder: number; garnishDishId?: string | null }[] }) {
+    return this.dailyMenuService.createOrUpdate(data);
+  }
+
+  @Delete(':date')
+  @UseGuards(AdminGuard)
+  async delete(@Param('date') date: string) {
+    // Метод delete не реализован в сервисе, возвращаем заглушку
+    return { message: 'Delete method not implemented', date };
+  }
+}

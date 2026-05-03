@@ -87,6 +87,8 @@ export default function ClientCompanyRequests({ token }: { token: string }) {
             <div className="gp-soft-block"><div style={{ color: '#666' }}>Сотрудников</div><strong>{activeEntry.employeesCount}</strong></div>
             <div className="gp-soft-block"><div style={{ color: '#666' }}>В заявке</div><strong style={{ color: '#0d6efd' }}>{activeEntry.confirmedCount}</strong></div>
             <div className="gp-soft-block"><div style={{ color: '#666' }}>Черновики</div><strong style={{ color: '#fd7e14' }}>{activeEntry.draftCount}</strong></div>
+            <div className="gp-soft-block"><div style={{ color: '#666' }}>Оплачено</div><strong style={{ color: '#28a745' }}>{activeEntry.paidCount || 0}</strong></div>
+            <div className="gp-soft-block"><div style={{ color: '#666' }}>Отсрочка</div><strong style={{ color: '#fd7e14' }}>{activeEntry.deferredCount || 0}</strong></div>
             <div className="gp-soft-block"><div style={{ color: '#666' }}>Порций</div><strong>{activeEntry.totalPortions}</strong></div>
             <div className="gp-soft-block"><div style={{ color: '#666' }}>Сумма</div><strong>{activeEntry.totalAmount} ₽</strong></div>
           </div>
@@ -104,8 +106,25 @@ export default function ClientCompanyRequests({ token }: { token: string }) {
                       <div style={{ color: '#666', marginTop: 4 }}>Порций: {employee.totalPortions} • Сумма: {employee.totalAmount} ₽</div>
                     </div>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: employee.weeklyStatus === 'CONFIRMED' ? '#0d6efd' : '#fd7e14' }}>
-                    {employee.weeklyStatus === 'CONFIRMED' ? 'В заявке' : 'Черновик'}
+                  <span style={{ fontSize: 13, fontWeight: 700, color: employee.weeklyStatus === 'DRAFT' ? '#fd7e14' : employee.weeklyStatus === 'CONFIRMED' ? '#0d6efd' : employee.weeklyStatus === 'PAID' ? '#28a745' : employee.weeklyStatus === 'DEFERRED' ? '#fd7e14' : '#fd7e14' }}>
+                    {employee.weeklyStatus === 'DRAFT' ? 'Черновик' : employee.weeklyStatus === 'CONFIRMED' ? 'В заявке' : employee.weeklyStatus === 'PAID' ? 'Оплачено' : employee.weeklyStatus === 'DEFERRED' ? 'Отсрочка' : 'Черновик'}
+                    {(employee.weeklyStatus === 'PAID' || employee.weeklyStatus === 'DEFERRED') && (
+                      <button onClick={async () => {
+                        if (!confirm('Отменить заявку? ' + (employee.weeklyStatus === 'PAID' ? 'Средства вернутся на баланс.' : 'Отсрочка будет аннулирована.'))) return;
+                        try {
+                          await axios.post(API_URL + '/users/company-dashboard/cancel-request', { weeklyMenuId: employee.weeklyMenuId }, {
+                            headers: { Authorization: 'Bearer ' + token }
+                          });
+                          loadRequests();
+                          setError('\u2705 Заявка отменена');
+                        } catch (err) {
+                          const msg = (err as any)?.response?.data?.message || 'Ошибка отмены';
+                          setError('\u274c ' + msg);
+                        }
+                      }} style={{ marginLeft: 8, background: '#dc3545', color: 'white', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11, cursor: 'pointer' }}>
+                        Отменить
+                      </button>
+                    )}
                   </span>
                 </div>
 

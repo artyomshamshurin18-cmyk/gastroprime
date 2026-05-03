@@ -1,0 +1,10 @@
+[1/20] hranenie-msk.ru                     --
+[2/20] warehouse-msk.ru                    --
+[3/20] warehouse-service.ru                --
+[4/20] storage-msk.ru                      --
+[5/20] industrialny-park.ru                --
+[6/20] promyshlenny-park.ru                --
+[7/20] promzona-msk.ru                     --
+[8/20] klaster.ru                          --
+[9/20] logistic-park.ru                    --
+[10/20] industrial-park.ru                  

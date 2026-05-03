@@ -19,6 +19,17 @@ interface Dish {
   containsPork?: boolean
   containsGarlic?: boolean
   containsMayonnaise?: boolean
+  garnishDish?: GarnishDish | null
+}
+
+interface GarnishDish {
+  id: string
+  name: string
+  price: number
+  weight?: number | null
+  measureUnit?: string
+  calories?: number | null
+  photoUrl?: string | null
 }
 
 interface DailyMenu {
@@ -593,6 +604,22 @@ export default function WeeklyMenuSelector({ token, mode = 'planning' }: { token
                               <div style={{ flex: 1, minWidth: 180 }}>
                                 <div style={{ fontWeight: 700, fontSize: 16 }}>{dish.name}</div>
                                 {dish.description && <div style={{ fontSize: 14, lineHeight: 1.45, color: '#666', marginTop: 4 }}><strong>Состав:</strong> {dish.description}</div>}
+                                {dish.garnishDish && (
+                                  <div style={{ marginTop: 8, padding: '6px 10px', background: '#faf0ff', borderRadius: 10, border: '1px solid #e8d5f5', fontSize: 13 }}>
+                                    <span style={{ color: '#7b2d8e', fontWeight: 600 }}>Гарнир:</span>{' '}
+                                    <span style={{ color: '#333' }}>{dish.garnishDish.name}</span>
+                                    {dish.garnishDish.weight && (
+                                      <span style={{ color: '#666', marginLeft: 6 }}>
+                                        {dish.garnishDish.weight} {'г'}
+                                      </span>
+                                    )}
+                                    {dish.garnishDish.price > 0 && (
+                                      <span style={{ color: '#7b2d8e', marginLeft: 6, fontWeight: 600 }}>
+                                        +{dish.garnishDish.price} ₽
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                                 {facts.length > 0 && (
                                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                                     {facts.map(fact => <span key={fact} style={{ padding: '4px 8px', borderRadius: 999, background: '#fff4ee', color: '#b53b1f', fontSize: 12, fontWeight: 600 }}>{fact}</span>)}

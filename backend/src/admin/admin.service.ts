@@ -134,7 +134,7 @@ export class AdminService {
 
   private normalizeAdminRole(value: unknown, fallback = 'CLIENT') {
     const normalized = normalizeText(value).toUpperCase() || fallback
-    const allowedRoles = new Set(['CLIENT', 'MASTER_CLIENT', 'ADMIN', 'SUPERADMIN', 'MANAGER'])
+    const allowedRoles = new Set(['CLIENT', 'MASTER_CLIENT', 'ADMIN', 'SUPERADMIN', 'MANAGER', 'CRM_OPERATOR'])
 
     if (!allowedRoles.has(normalized)) {
       throw new BadRequestException('Недопустимая роль пользователя')
@@ -305,6 +305,7 @@ export class AdminService {
 
   async getAllCompanies() {
     return this.prisma.company.findMany({
+      where: { status: { not: 'CRM_LEAD' } },
       include: {
         categoryPrices: {
           include: {
@@ -410,7 +411,7 @@ export class AdminService {
     const companyMap = new Map(companies.map(company => [normalizeKey(company.name), company]))
     const userMap = new Map(users.map(user => [normalizeText(user.email).toLowerCase(), user]))
     const fallbackPassword = normalizeText(defaultPassword)
-    const allowedRoles = new Set(['CLIENT', 'MASTER_CLIENT', 'ADMIN', 'SUPERADMIN'])
+    const allowedRoles = new Set(['CLIENT', 'MASTER_CLIENT', 'ADMIN', 'SUPERADMIN', 'CRM_OPERATOR'])
 
     const rows = rawRows.map((row, index) => {
       const companyName = normalizeText(getImportCell(row, ['company', 'компания']))
@@ -1838,7 +1839,7 @@ export class AdminService {
   }
 
   async getAllWeeklyMenus(start: string, end: string) {
-    return this.prisma.weeklyMenu.findMany({
+    const menus = await this.prisma.weeklyMenu.findMany({
       where: start && end
         ? {
             startDate: { gte: new Date(start) },
@@ -1851,17 +1852,61 @@ export class AdminService {
             email: true, 
             firstName: true, 
             lastName: true, 
-            company: { select: { name: true } } 
+            companyId: true,
+            company: { 
+              select: { 
+                name: true,
+                categoryPrices: { select: { categoryId: true, price: true } }
+              } 
+            } 
           } 
         },
         selections: { 
           include: { 
-            items: { include: { dish: true } } 
+            items: { include: { dish: { include: { category: { select: { id: true } } } } } } 
           } 
         }
       },
       orderBy: { createdAt: 'desc' }
-    })
+    });
+
+    // Post-process: calculate correct prices using company category prices
+    const companyPrices = new Map<string, Map<string, number>>();
+    for (const menu of menus) {
+      const cid = menu.user.companyId;
+      if (cid && !companyPrices.has(cid)) {
+        const prices = new Map<string, number>();
+        if (menu.user.company?.categoryPrices) {
+          for (const cp of menu.user.company.categoryPrices) {
+            prices.set(cp.categoryId, cp.price);
+          }
+        }
+        companyPrices.set(cid, prices);
+      }
+    }
+
+    // Attach effective price to each item
+    return menus.map(menu => {
+      const cid = menu.user.companyId;
+      const catPrices = cid ? companyPrices.get(cid) : undefined;
+      
+      return {
+        ...menu,
+        selections: menu.selections.map(sel => ({
+          ...sel,
+          items: sel.items.map(item => ({
+            ...item,
+            dish: {
+              ...item.dish,
+              // effectivePrice: company-specific if available, else dish.price
+              price: catPrices?.has(item.dish.category?.id || '')
+                ? catPrices.get(item.dish.category.id)!
+                : item.dish.price
+            }
+          }))
+        }))
+      };
+    });
   }
 
   async updateWeeklyMenuStatus(id: string, status: string) {
@@ -2822,4 +2867,240 @@ export class AdminService {
 
     return this.getCompanyChatMessages(companyId)
   }
+  async uploadCompanyDocument(companyId: string, file: Express.Multer.File) {
+    const { originalname, filename, size, mimetype } = file
+    const doc = await this.prisma.companyDocument.create({
+      data: {
+        companyId,
+        name: originalname,
+        filename: filename,
+        size: size,
+        mimeType: mimetype,
+      },
+    })
+    return doc
+  }
+
+  async listCompanyDocuments(companyId: string) {
+    return this.prisma.companyDocument.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    })
+  }
+
+  async deleteCompanyDocument(companyId: string, docId: string) {
+    const doc = await this.prisma.companyDocument.findFirst({
+      where: { id: docId, companyId },
+    })
+    if (!doc) {
+      throw new NotFoundException('Документ не найден')
+    }
+    // Delete file
+    const filePath = path.join(process.cwd(), 'uploads', 'company-docs', companyId, doc.filename)
+    try { fs.unlinkSync(filePath) } catch {}
+    // Delete from DB
+    await this.prisma.companyDocument.delete({ where: { id: docId } })
+    return { deleted: true }
+  }
+
+  async chargeOrder(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { company: true },
+    });
+    if (!order) {
+      throw new NotFoundException('Заказ не найден');
+    }
+
+    if (order.status !== 'CONFIRMED' && order.status !== 'PENDING') {
+      throw new BadRequestException('Заказ уже обработан');
+    }
+
+    const newBalance = (order.company.balance || 0) - order.totalAmount;
+    if (newBalance < 0) {
+      throw new BadRequestException('Недостаточно средств на балансе компании');
+    }
+
+    await this.prisma.company.update({
+      where: { id: order.companyId },
+      data: { balance: newBalance },
+    });
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'PAID' },
+      include: {
+        items: { include: { dish: true } },
+        company: true,
+        user: { select: { email: true, firstName: true, lastName: true } },
+      },
+    });
+
+    return updatedOrder;
+  }
+
+  async deferOrder(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { company: true },
+    });
+    if (!order) {
+      throw new NotFoundException('Заказ не найден');
+    }
+
+    if (order.status !== 'CONFIRMED' && order.status !== 'PENDING') {
+      throw new BadRequestException('Заказ уже обработан');
+    }
+
+    await this.prisma.company.update({
+      where: { id: order.companyId },
+      data: { creditBalance: (order.company.creditBalance || 0) + order.totalAmount },
+    });
+
+    const updatedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'DEFERRED' },
+      include: {
+        items: { include: { dish: true } },
+        company: true,
+        user: { select: { email: true, firstName: true, lastName: true } },
+      },
+    });
+
+    return updatedOrder;
+  }
+  async adminChangePassword(adminUserId: string, targetUserId: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 4) {
+      throw new BadRequestException('Пароль должен быть не менее 4 символов');
+    }
+    const admin = await this.prisma.user.findUnique({ where: { id: adminUserId } });
+    if (!admin) throw new NotFoundException('Администратор не найден');
+    const targetUser = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) throw new NotFoundException('Пользователь не найден');
+    if (admin.role !== 'ADMIN' && admin.role !== 'SUPERADMIN') {
+      if (admin.role !== 'MASTER_CLIENT') {
+        throw new ForbiddenException('Недостаточно прав для смены пароля');
+      }
+      if (admin.companyId !== targetUser.companyId) {
+        throw new ForbiddenException('Вы можете менять пароль только сотрудникам своей компании');
+      }
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: targetUserId },
+      data: { password: hashedPassword },
+    });
+    return { message: 'Пароль успешно изменен' };
+  }
+
+
+  async chargeWeeklyMenu(id: string) {
+    const weeklyMenu = await this.prisma.weeklyMenu.findUnique({
+      where: { id },
+      include: {
+        user: { select: { companyId: true } },
+        selections: { include: { items: { include: { dish: { select: { id: true, name: true, price: true, categoryId: true } } } } } }
+      }
+    });
+    if (!weeklyMenu) throw new NotFoundException('Weekly menu not found');
+
+    // Calculate total with company-specific prices
+    const companyId = weeklyMenu.user.companyId;
+    const categoryPrices = companyId ? await this.prisma.companyCategoryPrice.findMany({
+      where: { companyId },
+      select: { categoryId: true, price: true }
+    }) : [];
+    const priceMap = new Map(categoryPrices.map(cp => [cp.categoryId, cp.price]));
+    
+    let totalAmount = 0;
+    for (const sel of weeklyMenu.selections) {
+      for (const item of sel.items) {
+        const price = priceMap.get(item.dish.categoryId || '') ?? item.dish.price;
+        totalAmount += price * item.quantity;
+      }
+    }
+
+    // Check balance
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
+    if (company.balance < totalAmount) {
+      throw new BadRequestException('Недостаточно средств на балансе');
+    }
+
+    // Create Order and deduct balance
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.company.update({
+        where: { id: companyId },
+        data: { balance: { decrement: totalAmount } }
+      });
+
+      await tx.weeklyMenu.update({
+        where: { id },
+        data: { status: 'PAID' }
+      });
+
+      const order = await tx.order.create({
+        data: {
+          orderNumber: 'WM-' + id.slice(0, 8).toUpperCase() + String.fromCharCode(45) + Date.now().toString(36).toUpperCase(),
+          userId: weeklyMenu.userId,
+          companyId,
+          status: 'PAID',
+          totalAmount,
+          deliveryDate: weeklyMenu.startDate,
+          deliveryTime: null,
+          comment: 'Списание заявки на меню',
+          items: {
+            create: weeklyMenu.selections.flatMap(sel =>
+              sel.items.map(item => ({
+                dishId: item.dish.id,
+                quantity: item.quantity,
+                unitPrice: priceMap.get(item.dish.categoryId || '') ?? item.dish.price
+              }))
+            )
+          }
+        }
+      });
+
+      return order;
+    });
+
+    return { success: true, orderId: result.id, totalAmount };
+  }
+
+  async deferWeeklyMenu(id: string) {
+    const weeklyMenu = await this.prisma.weeklyMenu.findUnique({
+      where: { id },
+      include: {
+        user: { select: { companyId: true } },
+        selections: {
+          include: {
+            items: { include: { dish: { select: { id: true, name: true, price: true, categoryId: true } } } }
+          }
+        }
+      }
+    });
+    if (!weeklyMenu) throw new NotFoundException('Weekly menu not found');
+
+    const priceMap = await getCompanyCategoryPriceMap(this.prisma, weeklyMenu.user.companyId);
+    let totalAmount = 0;
+    for (const sel of weeklyMenu.selections) {
+      for (const item of sel.items) {
+        totalAmount += getResolvedCompanyDishPrice(item.dish, priceMap) * item.quantity;
+      }
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.company.update({
+        where: { id: weeklyMenu.user.companyId },
+        data: { creditBalance: { increment: totalAmount } }
+      });
+      await tx.weeklyMenu.update({
+        where: { id },
+        data: { status: 'DEFERRED' }
+      });
+    });
+
+    return { success: true, totalAmount };
+  }
+
 }

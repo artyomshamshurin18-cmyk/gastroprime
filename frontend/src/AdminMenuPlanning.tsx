@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import { sortCategoryEntries } from './categoryOrder'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
+
 
 const formatInputDate = (value: Date) => {
   const year = value.getFullYear()
@@ -20,6 +21,7 @@ const addDays = (value: Date, days: number) => {
 interface Dish {
   id: string
   name: string
+  categoryId?: string
   category?: { name: string }
   price: number
 }
@@ -46,10 +48,17 @@ interface MenuImportPreview {
   rows: MenuImportRow[]
 }
 
+interface SelectedDishDraft {
+  dishId: string
+  maxQuantity: number
+  name: string
+  garnishDishId?: string | null
+}
+
 export default function AdminMenuPlanning({ token }: { token: string }) {
   const [date, setDate] = useState('')
   const [dishes, setDishes] = useState<Dish[]>([])
-  const [selectedDishes, setSelectedDishes] = useState<Record<string, { dishId: string; maxQuantity: number; name: string }>>({})
+  const [selectedDishes, setSelectedDishes] = useState<Record<string, SelectedDishDraft>>({})
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [importFile, setImportFile] = useState<File | null>(null)
@@ -59,6 +68,7 @@ export default function AdminMenuPlanning({ token }: { token: string }) {
   const [exportStart, setExportStart] = useState(() => formatInputDate(new Date()))
   const [exportEnd, setExportEnd] = useState(() => formatInputDate(addDays(new Date(), 29)))
   const [exporting, setExporting] = useState(false)
+  const [garnishPicker, setGarnishPicker] = useState<{ dishId: string; dishName: string } | null>(null)
 
   useEffect(() => { loadDishes() }, [])
 
@@ -71,6 +81,19 @@ export default function AdminMenuPlanning({ token }: { token: string }) {
     }
   }
 
+  const isMainWithGarnishDish = (dish: Dish) => {
+    const catName = dish.category?.name || ''
+    return catName.startsWith('Второе') || catName === 'Премиум второе'
+  }
+
+  const isGarnishDish = (dish: Dish) => {
+    const catName = dish.category?.name || ''
+    return catName.startsWith('Гарнир')
+  }
+
+  const garnishOptions = useMemo(() => dishes.filter(isGarnishDish), [dishes])
+  const garnishById = useMemo(() => new Map(dishes.map(dish => [dish.id, dish] as const)), [dishes])
+
   const toggleDish = (dish: Dish) => {
     setSelectedDishes(prev => {
       if (prev[dish.id]) {
@@ -78,13 +101,17 @@ export default function AdminMenuPlanning({ token }: { token: string }) {
         delete next[dish.id]
         return next
       }
-      return { ...prev, [dish.id]: { dishId: dish.id, maxQuantity: 100, name: dish.name } }
+      return { ...prev, [dish.id]: { dishId: dish.id, maxQuantity: 100, name: dish.name, garnishDishId: null } }
     })
   }
 
   const updateMaxQuantity = (id: string, quantity: number) => {
     if (quantity < 1) return
     setSelectedDishes(prev => ({ ...prev, [id]: { ...prev[id], maxQuantity: quantity } }))
+  }
+
+  const updateGarnish = (id: string, garnishDishId: string | null) => {
+    setSelectedDishes(prev => ({ ...prev, [id]: { ...prev[id], garnishDishId } }))
   }
 
   const saveMenu = async () => {
@@ -98,11 +125,17 @@ export default function AdminMenuPlanning({ token }: { token: string }) {
     try {
       await axios.post(`${API_URL}/daily-menu`, {
         date,
-        items: Object.values(selectedDishes).map((item, index) => ({ dishId: item.dishId, maxQuantity: item.maxQuantity, sortOrder: index }))
+        items: Object.values(selectedDishes).map((item, index) => ({
+          dishId: item.dishId,
+          maxQuantity: item.maxQuantity,
+          sortOrder: index,
+          ...(item.garnishDishId ? { garnishDishId: item.garnishDishId } : {}),
+        }))
       }, { headers: { Authorization: `Bearer ${token}` } })
       setMessage('✅ Меню на дату сохранено')
       setSelectedDishes({})
       setDate('')
+      setGarnishPicker(null)
     } catch (e: any) {
       setMessage(`❌ Ошибка: ${e.response?.data?.message || e.message}`)
     } finally {
@@ -237,11 +270,11 @@ export default function AdminMenuPlanning({ token }: { token: string }) {
         <h3 style={{ marginTop: 0 }}>Импорт меню по датам из Excel</h3>
         <p style={{ color: '#666', marginTop: -5 }}>
           Нужные колонки: <strong>Дата</strong>, <strong>Категория</strong>, <strong>Блюдо</strong>. Дополнительно можно указать <strong>Макс. количество</strong> и <strong>Порядок</strong>.
-          Одна строка = одно блюдо на одну дату.
+          Одна строка = одно блюдо на одну дату. Также поддерживается формат Gastroprime: CSV/TSV файлы с колонками: Дата, Завтрак (основное блюдо), Суп со свининой и т.д.
         </p>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input type="file" accept=".xlsx,.xls" onChange={(e) => { setImportFile(e.target.files?.[0] || null); setImportPreview(null) }} />
+          <input type="file" accept=".xlsx,.xls,.csv,.tsv,.txt" onChange={(e) => { setImportFile(e.target.files?.[0] || null); setImportPreview(null) }} />
           <button onClick={previewImport} disabled={previewLoading || !importFile} style={{ background: '#0d6efd', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
             {previewLoading ? 'Разбираю файл...' : 'Показать preview'}
           </button>
@@ -289,6 +322,9 @@ export default function AdminMenuPlanning({ token }: { token: string }) {
 
       <div style={{ background: '#fff', padding: 20, borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
         <h3 style={{ marginTop: 0 }}>Ручное планирование на одну дату</h3>
+        <div style={{ marginBottom: 12, color: '#666' }}>
+          Для блюд из категорий <strong>«Второе без свинины»</strong> и <strong>«Второе свинина»</strong> можно сразу привязать гарнир.
+        </div>
         <div style={{ marginBottom: 20, display: 'flex', gap: 15, alignItems: 'center', flexWrap: 'wrap' }}>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           <button onClick={saveMenu} disabled={loading} style={{ background: '#28a745', color: 'white', border: 'none', borderRadius: 6, padding: '8px 20px' }}>
@@ -301,14 +337,43 @@ export default function AdminMenuPlanning({ token }: { token: string }) {
             <h4 style={{ color: '#007bff' }}>{category}</h4>
             {items.map(dish => {
               const selected = selectedDishes[dish.id]
+              const selectedGarnish = selected?.garnishDishId ? garnishById.get(selected.garnishDishId) : null
+              const canLinkGarnish = isMainWithGarnishDish(dish)
+
               return (
-                <div key={dish.id} onClick={() => toggleDish(dish)} style={{ display: 'flex', padding: 12, border: selected ? '2px solid #28a745' : '1px solid #ddd', background: selected ? '#d4edda' : 'white', marginBottom: 8, cursor: 'pointer', borderRadius: 6 }}>
-                  <input type="checkbox" checked={!!selected} readOnly style={{ marginRight: 12 }} />
-                  <div style={{ flex: 1 }}>{dish.name} - {dish.price} ₽</div>
-                  {selected && (
-                    <div onClick={(e) => e.stopPropagation()}>
-                      Max:{' '}
-                      <input type="number" min="1" value={selected.maxQuantity} onChange={(e) => updateMaxQuantity(dish.id, parseInt(e.target.value) || 1)} style={{ width: 70 }} />
+                <div key={dish.id} onClick={() => toggleDish(dish)} style={{ padding: 12, border: selected ? '2px solid #28a745' : '1px solid #ddd', background: selected ? '#d4edda' : 'white', marginBottom: 8, cursor: 'pointer', borderRadius: 6 }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <input type="checkbox" checked={!!selected} readOnly style={{ marginRight: 12 }} />
+                    <div style={{ flex: 1 }}>{dish.name} - {dish.price} ₽</div>
+                    {selected && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        Max:{' '}
+                        <input type="number" min="1" value={selected.maxQuantity} onChange={(e) => updateMaxQuantity(dish.id, parseInt(e.target.value) || 1)} style={{ width: 70 }} />
+                      </div>
+                    )}
+                  </div>
+
+                  {selected && canLinkGarnish && (
+                    <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 10, paddingLeft: 34, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ color: '#6f42c1', fontSize: 14 }}>
+                        {selectedGarnish ? `Гарнир: ${selectedGarnish.name}` : 'Гарнир не привязан'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setGarnishPicker({ dishId: dish.id, dishName: dish.name })}
+                        style={{ background: '#eef5ff', color: '#0d6efd', border: '1px solid #bfd7ff', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}
+                      >
+                        {selectedGarnish ? 'Изменить гарнир' : 'Связать гарнир'}
+                      </button>
+                      {selectedGarnish && (
+                        <button
+                          type="button"
+                          onClick={() => updateGarnish(dish.id, null)}
+                          style={{ background: '#fff', color: '#6c757d', border: '1px solid #ced4da', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}
+                        >
+                          Убрать гарнир
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -317,6 +382,43 @@ export default function AdminMenuPlanning({ token }: { token: string }) {
           </div>
         ))}
       </div>
+
+      {garnishPicker && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+          <div style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ margin: 0 }}>Выбор гарнира</h3>
+              <button type="button" onClick={() => setGarnishPicker(null)} style={{ background: 'transparent', border: 'none', fontSize: 22, lineHeight: 1, cursor: 'pointer' }}>×</button>
+            </div>
+            <div style={{ color: '#444', marginBottom: 12 }}>
+              Для блюда <strong>{garnishPicker.dishName}</strong> выбери гарнир.
+            </div>
+
+            <div style={{ display: 'grid', gap: 8, maxHeight: 340, overflow: 'auto' }}>
+              {garnishOptions.map(option => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => {
+                    updateGarnish(garnishPicker.dishId, option.id)
+                    setGarnishPicker(null)
+                  }}
+                  style={{ textAlign: 'left', border: '1px solid #dbe4f0', borderRadius: 8, background: '#fff', padding: '10px 12px', cursor: 'pointer' }}
+                >
+                  <div style={{ fontWeight: 600 }}>{option.name}</div>
+                  <div style={{ color: '#666', fontSize: 13 }}>{option.category?.name || 'Гарнир'}</div>
+                </button>
+              ))}
+            </div>
+
+            {garnishOptions.length === 0 && (
+              <div style={{ color: '#856404', background: '#fff3cd', borderRadius: 8, padding: 12 }}>
+                В справочнике пока нет блюд в гарнирных категориях.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { AdminModule } from './admin/admin.module';
 import { ChatModule } from './chat/chat.module';
 import { DailyMenuModule } from './daily-menu/daily-menu.module';
 import { WeeklyMenuModule } from './weekly-menu/weekly-menu.module';
+import { DriverModule } from './driver/driver.module';
 import { PrismaModule } from './common/prisma.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { PrismaModule } from './common/prisma.module';
     ChatModule,
     DailyMenuModule,
     WeeklyMenuModule,
+    DriverModule,
   ],
 })
 export class AppModule {}

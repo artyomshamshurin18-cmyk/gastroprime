@@ -1,0 +1,22 @@
+[1/20] dee-one.ru                          OK 3
+[2/20] dikoloft.ru                         OK 1
+[3/20] dosmebel.com                        --
+[4/20] dr-loft.ru                          --
+[5/20] egeldesign.com                      OK 1
+[6/20] energoprom.ru                       --
+[7/20] estemebel.ru                        OK 1
+[8/20] everprof.ru                         OK 162
+[9/20] evryka.ru                           OK 1
+[10/20] fabrika-rila.ru                     OK 1
+[11/20] fabrika-mir.ru                      OK 1
+[12/20] fabrikamaster.ru                    OK 1
+[13/20] fairoom.ru                          OK 1
+[14/20] fiverays.ru                         OK 1
+[15/20] fm-zarya.ru                         OK 1
+[16/20] funbox.su                           --
+[17/20] gartlex.ru                          OK 1
+[18/20] glass-memory.ru                     OK 2
+[19/20] glmebel.com                         OK 1
+[20/20] grafi.ru                            --
+
+Done: 15 sites, 179 emails

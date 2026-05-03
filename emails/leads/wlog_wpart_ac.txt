@@ -1,0 +1,22 @@
+[1/20] skladservice.ru                     --
+[2/20] skladpro.ru                         --
+[3/20] megasklad.ru                        OK 2
+[4/20] sklad-plus.ru                       OK 1
+[5/20] sklad-holding.ru                    --
+[6/20] skladholding.ru                     --
+[7/20] skladovye-kompleksy.ru              --
+[8/20] skladskoy-terminal.ru               --
+[9/20] skladskoy-komplex.ru                --
+[10/20] skladskaya-logistika.ru             OK 1
+[11/20] arenda-sklada-msk.ru                OK 3
+[12/20] sklady.ru                           OK 4
+[13/20] skladzona.ru                        --
+[14/20] holod-sklad.ru                      OK 1
+[15/20] ice-sklad.ru                        --
+[16/20] coldstorage.ru                      --
+[17/20] refrigerator-msk.ru                 --
+[18/20] freezer-msk.ru                      --
+[19/20] morozko-msk.ru                      OK 3
+[20/20] otvetstvennoe-hranenie.ru           --
+
+Done: 7 sites, 15 emails

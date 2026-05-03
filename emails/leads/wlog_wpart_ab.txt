@@ -1,0 +1,9 @@
+[1/20] ruslogistika.ru                     --
+[2/20] regionlogistika.ru                  --
+[3/20] severlogistika.ru                   --
+[4/20] vashlogistik.ru                     --
+[5/20] mk-logistika.ru                     --
+[6/20] parklogistic.ru                     --
+[7/20] prom-logistika.ru                   OK 1
+[8/20] transport-logistika.ru              --
+[9/20] stroy-logistika.ru                  

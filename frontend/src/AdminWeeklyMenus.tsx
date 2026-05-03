@@ -33,7 +33,9 @@ const statusLabels: Record<string, string> = {
   PENDING: 'На рассмотрении',
   CONFIRMED: 'Подтверждено',
   REJECTED: 'Отклонено',
-  COMPLETED: 'Выполнено'
+  COMPLETED: 'Выполнено',
+  PAID: 'Оплачено',
+  DEFERRED: 'Отсрочка'
 }
 
 const statusColors: Record<string, string> = {
@@ -41,7 +43,9 @@ const statusColors: Record<string, string> = {
   PENDING: '#ffc107',
   CONFIRMED: '#28a745',
   REJECTED: '#dc3545',
-  COMPLETED: '#17a2b8'
+  COMPLETED: '#17a2b8',
+  PAID: '#28a745',
+  DEFERRED: '#fd7e14'
 }
 
 export default function AdminWeeklyMenus({ token }: { token: string }) {
@@ -161,6 +165,36 @@ export default function AdminWeeklyMenus({ token }: { token: string }) {
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
+                  {(menu.status === "CONFIRMED" || menu.status === "PENDING") && (
+                    <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                      <button onClick={async () => {
+                        try {
+                          await axios.post(API_URL + '/admin/weekly-menus/' + menu.id + '/charge', {}, {
+                            headers: { Authorization: "Bearer " + token }
+                          });
+                          setMenus(prev => prev.map(m => m.id === menu.id ? { ...m, status: "PAID" } : m));
+                        } catch (err) {
+                          const msg = (err as any)?.response?.data?.message || "Ошибка";
+                          alert("Ошибка: " + msg);
+                        }
+                      }} style={{ background: "#28a745", color: "white", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 13 }}>
+                        Списать с баланса
+                      </button>
+                      <button onClick={async () => {
+                        try {
+                          await axios.post(API_URL + '/admin/weekly-menus/' + menu.id + '/defer', {}, {
+                            headers: { Authorization: "Bearer " + token }
+                          });
+                          setMenus(prev => prev.map(m => m.id === menu.id ? { ...m, status: "DEFERRED" } : m));
+                        } catch (err) {
+                          const msg = (err as any)?.response?.data?.message || "Ошибка";
+                          alert("Ошибка: " + msg);
+                        }
+                      }} style={{ background: "#fd7e14", color: "white", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 13 }}>
+                        Отсрочка платежа
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

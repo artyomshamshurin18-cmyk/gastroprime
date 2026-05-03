@@ -39,10 +39,12 @@ model User {
   chatMessages    ChatMessage[]      @relation("ChatMessageSender")
   createdChatInvites ChatInvite[]    @relation("ChatInviteCreator")
   guestInviteSessions ChatInviteGuest[]
+  driverRoutes       DriverRoute[]
 }
 
 model Company {
   id              String  @id @default(uuid())
+  accountNumber   String  @unique
   name            String
   status          String  @default("ACTIVE")
   contactPerson   String?
@@ -74,6 +76,25 @@ model Company {
   chatConversations ChatConversation[]
   chatInvites      ChatInvite[]
   categoryPrices   CompanyCategoryPrice[]
+  files            CompanyFile[]
+  driverRouteCompanies DriverRouteCompany[]
+}
+
+model CompanyFile {
+  id        String   @id @default(uuid())
+  companyId String
+  fileName  String
+  fileUrl   String
+  mimeType  String
+  sizeBytes Int
+  kind      String   @default("DOCUMENT")
+  label     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
 }
 
 model BillingSettings {
@@ -166,6 +187,8 @@ model WeeklyMenu {
   startDate   DateTime
   endDate     DateTime
   status      String   @default("DRAFT")
+  chargedAt   DateTime?
+  chargedAmount Int    @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -415,4 +438,40 @@ model CompanyCategoryPrice {
   @@unique([companyId, categoryId])
   @@index([companyId])
   @@index([categoryId])
+}
+
+model DriverRoute {
+  id        String   @id @default(uuid())
+  driverId  String
+  date      DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  driver    User                 @relation(fields: [driverId], references: [id])
+  companies DriverRouteCompany[]
+
+  @@unique([driverId, date])
+  @@index([driverId, date])
+  @@index([date])
+}
+
+model DriverRouteCompany {
+  id               String   @id @default(uuid())
+  driverRouteId    String
+  companyId        String
+  deliveryStatus   String   @default("PENDING")
+  statusChangedAt  DateTime?
+  arrivedAt        DateTime?
+  unloadedAt       DateTime?
+  departedAt       DateTime?
+  driverNote       String?
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  driverRoute DriverRoute @relation(fields: [driverRouteId], references: [id], onDelete: Cascade)
+  company     Company     @relation(fields: [companyId], references: [id])
+
+  @@unique([driverRouteId, companyId])
+  @@index([driverRouteId, sortOrder])
 }

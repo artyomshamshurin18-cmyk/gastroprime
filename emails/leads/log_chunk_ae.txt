@@ -1,0 +1,22 @@
+[1/20] mdorf.ru                            --
+[2/20] mebel-moskva.ru                     --
+[3/20] mebelapartment.ru                   OK 3
+[4/20] mebeloptom.com                      OK 65
+[5/20] mebelvmode.ru                       OK 1
+[6/20] mebelzakazmo.ru                     OK 1
+[7/20] mebm1.ru                            OK 1
+[8/20] mefaro.ru                           --
+[9/20] mfm-moscow.ru                       OK 4
+[10/20] mgsmeb.ru                           --
+[11/20] mlpkmoskovit.ru                     --
+[12/20] montiero.ru                         OK 1
+[13/20] moonzana.ru                         OK 1
+[14/20] mosmirmebeli.com                    OK 1
+[15/20] nami-ag.ru                          OK 1
+[16/20] odinmebel.ru                        OK 3
+[17/20] origano-mebel.ru                    OK 1
+[18/20] planetadereva.ru                    OK 2
+[19/20] poliprof-l.ru                       OK 5
+[20/20] posidushka.ru                       --
+
+Done: 14 sites, 90 emails

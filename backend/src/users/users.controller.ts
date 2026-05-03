@@ -128,6 +128,11 @@ export class UsersController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Post('company-dashboard/cancel-request')
+  async cancelWeeklyMenuRequest(@Request() req, @Body() data: { weeklyMenuId: string }) {
+    return this.usersService.cancelWeeklyMenuRequest(req.user.userId, data.weeklyMenuId);
+  }
+
   @Patch('company-dashboard/employees/:id/selection')
   async setCompanyEmployeeSelection(@Request() req, @Param('id') id: string, @Body() body: { date?: string; items?: { dishId: string; quantity: number }[] }) {
     return this.usersService.setCompanyEmployeeSelection(req.user.userId, id, body);
