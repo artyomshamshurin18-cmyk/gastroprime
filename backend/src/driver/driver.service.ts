@@ -91,7 +91,7 @@ export class DriverService {
           cd.dishes.get(key)!.quantity += item.quantity;
         } else {
           cd.dishes.set(key, {
-            dishName: item.dish.name,
+            name: item.dish.name,
             categoryName: item.dish.category?.name || 'Без категории',
             quantity: item.quantity,
           });
@@ -106,19 +106,19 @@ export class DriverService {
           email: user.email,
           phones: user.phone || '',
           dishes: sel.items.map((item: any) => ({
-            dishName: item.dish.name,
+            name: item.dish.name,
             categoryName: item.dish.category?.name || 'Без категории',
             quantity: item.quantity,
           })),
         });
       } else {
         for (const item of sel.items) {
-          const existingItem = existingEmp.dishes.find((d: any) => d.dishName === item.dish.name);
+          const existingItem = existingEmp.dishes.find((d: any) => d.name === item.dish.name);
           if (existingItem) {
             existingItem.quantity += item.quantity;
           } else {
             existingEmp.dishes.push({
-              dishName: item.dish.name,
+              name: item.dish.name,
               categoryName: item.dish.category?.name || 'Без категории',
               quantity: item.quantity,
             });
