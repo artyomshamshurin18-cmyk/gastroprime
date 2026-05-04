@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { API_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 const today = new Date().toISOString().slice(0, 10)
 const monthStart = `${today.slice(0, 8)}01`
 

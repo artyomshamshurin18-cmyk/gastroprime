@@ -45,13 +45,4 @@ export class DriverController {
     );
   }
 
-  @Get('kitchen-summary')
-  async getKitchenSummary(
-    @Request() req,
-    @Query('date') date: string,
-    @Query('statuses') statuses: string,
-  ) {
-    const effectiveDate = date || new Date().toISOString().slice(0, 10);
-    return this.driverService.getKitchenSummary(req.user.userId, effectiveDate, statuses || 'PENDING,CONFIRMED,PREPARING,COMPLETED');
-  }
 }

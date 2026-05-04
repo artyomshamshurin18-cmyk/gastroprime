@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 
 const weeklyStatusLabels: Record<string, string> = {
   DRAFT: 'Черновик',
@@ -472,7 +471,7 @@ export default function ClientCompanyDashboard({ token, onUserUpdate }: { token:
       <div style={{ background: '#fff', padding: 20, borderRadius: 8, marginBottom: 20, boxShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ width: 84, height: 84, borderRadius: 16, overflow: 'hidden', background: '#f6f6f6', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {data?.company?.logoUrl ? <img src={mediaUrl(data.company.logoUrl)} alt="Логотип компании" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#fff' }} /> : <span style={{ color: '#999', fontSize: 12 }}>Лого</span>}
+            {data?.company?.logoUrl ? <img src={MEDIA_URL(data.company.logoUrl)} alt="Логотип компании" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#fff' }} /> : <span style={{ color: '#999', fontSize: 12 }}>Лого</span>}
           </div>
           <div style={{ flex: '1 1 220px', minWidth: 180 }}>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -696,7 +695,7 @@ export default function ClientCompanyDashboard({ token, onUserUpdate }: { token:
                     </label>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                       <div style={{ width: 48, height: 48, borderRadius: '50%', overflow: 'hidden', background: '#f3f3f3', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {employee.avatarUrl ? <img src={mediaUrl(employee.avatarUrl)} alt={employee.userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#999', fontSize: 11 }}>Фото</span>}
+                        {employee.avatarUrl ? <img src={MEDIA_URL(employee.avatarUrl)} alt={employee.userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#999', fontSize: 11 }}>Фото</span>}
                       </div>
                       <div>
                         <strong>{employee.userName}</strong>
@@ -775,7 +774,7 @@ export default function ClientCompanyDashboard({ token, onUserUpdate }: { token:
                             <div key={dish.dishId} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 110px', gap: 10, alignItems: 'center', background: '#fff', borderRadius: 6, padding: 10, border: '1px solid #ececff' }}>
                               <div style={{ minWidth: 0, display: 'flex', gap: 10, alignItems: 'center' }}>
                                 <div style={{ width: 56, height: 56, borderRadius: 10, overflow: 'hidden', background: '#f6f6f6', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
-                                  {dish.photoUrl ? <img src={mediaUrl(dish.photoUrl)} alt={dish.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center' }} /> : <span style={{ color: '#aaa', fontSize: 11 }}>Фото</span>}
+                                  {dish.photoUrl ? <img src={MEDIA_URL(dish.photoUrl)} alt={dish.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center' }} /> : <span style={{ color: '#aaa', fontSize: 11 }}>Фото</span>}
                                 </div>
                                 <div style={{ minWidth: 0 }}>
                                   <div style={{ fontWeight: 600 }}>{dish.name}</div>

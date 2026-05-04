@@ -1,3 +1,4 @@
+export { API_URL } from '../api-config';
 export const CRM_STAGES = [
   { value: 'LEAD', label: '\u041b\u0438\u0434', color: '#6c757d', icon: '\ud83d\udccb' },
   { value: 'MODERATION', label: '\u0412 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0435', color: '#0d6efd', icon: '\ud83d\udd04' },
@@ -47,7 +48,6 @@ export const USER_ROLES = [
   { value: 'CLIENT', label: '\u041a\u043b\u0438\u0435\u043d\u0442' },
 ];
 
-export const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru';
 
 // ---- Project & Task Tracker Types ----
 

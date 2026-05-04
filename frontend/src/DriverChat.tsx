@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import { io } from 'socket.io-client'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 const SOCKET_URL = API_URL.replace(/\/api$/, '')
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 
 interface ChatAttachment {
   id: string
@@ -196,7 +195,7 @@ export default function DriverChat({ token, user }: { token: string, user: any }
                     {message.attachments.length > 0 && (
                       <div style={{ display: 'grid', gap: 8, marginTop: message.text ? 10 : 0 }}>
                         {message.attachments.map((attachment) => (
-                          <a key={attachment.id} href={mediaUrl(attachment.fileUrl)} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: isMine ? 'rgba(255,255,255,0.16)' : '#fff7f1', color: isMine ? '#fff' : '#b53b1f', textDecoration: 'none', maxWidth: '100%' }}>
+                          <a key={attachment.id} href={MEDIA_URL(attachment.fileUrl)} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: isMine ? 'rgba(255,255,255,0.16)' : '#fff7f1', color: isMine ? '#fff' : '#b53b1f', textDecoration: 'none', maxWidth: '100%' }}>
                             <span>{attachment.kind === 'IMAGE' ? '🖼️' : '📎'}</span>
                             <span style={{ wordBreak: 'break-word' }}>{attachment.fileName}</span>
                           </a>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { API_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 
 const STATUS_LABELS: Record<string, string> = {
   NEW: 'Новый', CONTACTED: 'На связи', MEETING: 'Встреча',

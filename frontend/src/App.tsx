@@ -26,10 +26,9 @@ import HelpCenter from './HelpCenter'
 import ManagerBoard from './ManagerBoard'
 import PortalLoginExperience from './PortalLoginExperience'
 import WeeklyMenuSelector from './WeeklyMenuSelector'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 const BRAND_LOGO_URL = 'https://static.tildacdn.com/tild6666-3335-4136-b866-376266373637/Group.svg'
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 const companyStatusLabels: Record<string, string> = {
   ONBOARDING: 'Подключение',
   ACTIVE: 'В работе',
@@ -118,7 +117,7 @@ function Login({ onLogin }: { onLogin: (token: string, user: any) => void }) {
     setLoading(true)
     
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password })
+      const response = await axios.post(`${API_URL}/api/auth/login`, { email, password })
       console.log('Response:', response.data)
       const token = response.data.access_token || response.data.token
       const user = response.data.user
@@ -191,9 +190,9 @@ function ClientDashboard({ user, token, onLogout, onUserUpdate, impersonatorUser
           </div>
         </div>
         <div className="gp-header-right">
-          {user?.company?.logoUrl && <span className="gp-top-pill" style={{ padding: 6 }}><img src={mediaUrl(user.company.logoUrl)} alt="Лого компании" style={{ height: 32, width: 'auto', display: 'block' }} /></span>}
+          {user?.company?.logoUrl && <span className="gp-top-pill" style={{ padding: 6 }}><img src={MEDIA_URL(user.company.logoUrl)} alt="Лого компании" style={{ height: 32, width: 'auto', display: 'block' }} /></span>}
           <span className="gp-top-pill" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {user?.avatarUrl && <img src={mediaUrl(user.avatarUrl)} alt="Аватар" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />}
+            {user?.avatarUrl && <img src={MEDIA_URL(user.avatarUrl)} alt="Аватар" style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />}
             <span>Привет, {user?.firstName || user?.email}!</span>
           </span>
           <span className="gp-top-pill">Статус компании: {companyStatusLabels[companyStatus] || companyStatus}</span>

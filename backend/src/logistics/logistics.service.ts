@@ -15,10 +15,6 @@ export class LogisticsService {
         routeName: routeName,
         date: { gte: startOfDay, lte: endOfDay },
       },
-      include: {
-        company: { select: { id: true, name: true } },
-        driver: { select: { id: true, firstName: true, email: true, phone: true } },
-      },
       orderBy: { sortOrder: 'asc' },
     });
 
@@ -34,9 +30,6 @@ export class LogisticsService {
       where: {
         driverId: driverId,
         date: { gte: startOfDay, lte: endOfDay },
-      },
-      include: {
-        company: { select: { id: true, name: true } },
       },
       orderBy: { sortOrder: 'asc' },
     });
@@ -61,10 +54,6 @@ export class LogisticsService {
         fileUrl: data.fileUrl || null,
         status: 'pending',
         sortOrder: data.sortOrder || 0,
-      },
-      include: {
-        company: { select: { id: true, name: true } },
-        driver: { select: { id: true, firstName: true, email: true, phone: true } },
       },
     });
   }
@@ -91,10 +80,6 @@ export class LogisticsService {
     return this.prisma.logisticsPoint.update({
       where: { id },
       data: updateData,
-      include: {
-        company: { select: { id: true, name: true } },
-        driver: { select: { id: true, firstName: true, email: true, phone: true } },
-      },
     });
   }
 

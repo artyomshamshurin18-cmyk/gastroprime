@@ -46,7 +46,8 @@ async function main() {
           name: 'Админ Компания',
           address: 'Москва, ул. Админская, 1',
           balance: 0,
-          limit: 0
+          limit: 0,
+          accountNumber: 'ADMIN-001'
         }
       }
     }
@@ -66,7 +67,8 @@ async function main() {
           name: 'ООО "Ромашка"',
           address: 'Москва, ул. Цветочная, 10',
           balance: 50000,
-          limit: 100000
+          limit: 100000,
+          accountNumber: 'CLIENT-001'
         }
       }
     }

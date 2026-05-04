@@ -33,7 +33,6 @@ export class CrmPaymentsService {
         where,
         include: {
           company: { select: { id: true, name: true } },
-          createdBy: { select: { id: true, firstName: true, lastName: true } },
         },
         orderBy: { date: 'desc' },
         skip: (filters.page - 1) * filters.limit,

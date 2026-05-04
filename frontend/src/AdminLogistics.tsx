@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from './api-config';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://api.gastroprime.ru';
 
 const AdminLogistics: React.FC<{ token: string }> = ({ token }) => {
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().slice(0, 10));

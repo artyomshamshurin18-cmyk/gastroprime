@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 
 interface Category {
   id: string
@@ -771,7 +770,7 @@ export default function AdminDishes({ token }: { token: string }) {
                   </div>
                   {/* Фото-миниатюра */}
                   {dish.photoUrl && (
-                    <img src={mediaUrl(dish.photoUrl)} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
+                    <img src={MEDIA_URL(dish.photoUrl)} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
                   )}
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dish.name}</div>
@@ -794,7 +793,7 @@ export default function AdminDishes({ token }: { token: string }) {
                   <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 14 }}>
                     <div style={{ width: 132, height: 132, borderRadius: 16, overflow: 'hidden', background: '#f6f6f6', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       {dish.photoUrl
-                        ? <img src={mediaUrl(dish.photoUrl)} alt={dish.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={MEDIA_URL(dish.photoUrl)} alt={dish.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <span style={{ color: '#999', fontSize: 12 }}>Нет фото</span>}
                     </div>
                     <div style={{ display: 'grid', gap: 8, minWidth: 240, flex: 1 }}>

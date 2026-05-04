@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 
 export default function ClientProfile({ token, user, onUserUpdate }: { token: string, user: any, onUserUpdate: (user: any) => void }) {
   const [form, setForm] = useState({
@@ -98,7 +97,7 @@ export default function ClientProfile({ token, user, onUserUpdate }: { token: st
       <div style={{ background: '#fff', padding: 20, borderRadius: 8, boxShadow: '0 2px 4px rgba(0,0,0,0.08)', display: 'grid', gap: 14 }}>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ width: 84, height: 84, borderRadius: '50%', overflow: 'hidden', background: '#f3f3f3', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {user?.avatarUrl ? <img src={mediaUrl(user.avatarUrl)} alt="Аватар" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#999', fontSize: 12 }}>Аватар</span>}
+            {user?.avatarUrl ? <img src={MEDIA_URL(user.avatarUrl)} alt="Аватар" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#999', fontSize: 12 }}>Аватар</span>}
           </div>
           <div>
             <div style={{ fontWeight: 700, marginBottom: 6 }}>Фото сотрудника</div>

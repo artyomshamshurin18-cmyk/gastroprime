@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import NewLeadModal from './NewLeadModal'
 import LeadDetailModal from './LeadDetailModal'
+import { API_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 
 const PIPELINE_STATUSES = [
   { id: 'NEW',          label: 'Новые',         color: '#94a3b8' },

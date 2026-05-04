@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
 import { sortCategoryEntries } from './categoryOrder'
+import { API_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 
 
 const formatInputDate = (value: Date) => {

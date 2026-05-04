@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' })
 
@@ -99,7 +98,7 @@ export default function ClientCompanyRequests({ token }: { token: string }) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     <div style={{ width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', background: '#f3f3f3', border: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {employee.avatarUrl ? <img src={mediaUrl(employee.avatarUrl)} alt={employee.userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#999', fontSize: 11 }}>Фото</span>}
+                      {employee.avatarUrl ? <img src={MEDIA_URL(employee.avatarUrl)} alt={employee.userName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#999', fontSize: 11 }}>Фото</span>}
                     </div>
                     <div>
                       <strong>{employee.userName}</strong>

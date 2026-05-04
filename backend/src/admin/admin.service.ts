@@ -9,6 +9,7 @@ import * as path from 'path'
 import * as crypto from 'crypto'
 import { buildCompanyCategoryPricesPayload, getCompanyCategoryPriceMap, getDefaultCompanyCategoryPrices, getResolvedCompanyDishPrice } from '../common/company-pricing'
 
+import { generateAccountNumber } from "../common/utils/account-number"
 const safeUserSelect = {
   id: true,
   email: true,
@@ -361,6 +362,7 @@ export class AdminService {
           company: {
             create: {
               name: data.companyName,
+              accountNumber: generateAccountNumber(),
               status: normalizeCompanyStatus(data.companyStatus),
               contactPerson: data.contactPerson || null,
               address: data.companyAddress || null,
@@ -531,6 +533,7 @@ export class AdminService {
     return this.prisma.company.create({
       data: {
         name,
+        accountNumber: generateAccountNumber(),
         status: normalizeCompanyStatus(data.status),
         contactPerson: normalizeText(data.contactPerson) || null,
         address: normalizeText(data.address) || null,
@@ -581,6 +584,7 @@ export class AdminService {
     return this.prisma.company.create({
       data: {
         name,
+        accountNumber: generateAccountNumber(),
         status: source.status,
         contactPerson: source.contactPerson,
         address: source.address,
@@ -2869,12 +2873,12 @@ export class AdminService {
   }
   async uploadCompanyDocument(companyId: string, file: Express.Multer.File) {
     const { originalname, filename, size, mimetype } = file
-    const doc = await this.prisma.companyDocument.create({
+    const doc = await this.prisma.companyFile.create({
       data: {
         companyId,
-        name: originalname,
-        filename: filename,
-        size: size,
+        fileName: originalname,
+        fileUrl: filename,
+        sizeBytes: size,
         mimeType: mimetype,
       },
     })
@@ -2882,24 +2886,24 @@ export class AdminService {
   }
 
   async listCompanyDocuments(companyId: string) {
-    return this.prisma.companyDocument.findMany({
+    return this.prisma.companyFile.findMany({
       where: { companyId },
       orderBy: { createdAt: 'desc' },
     })
   }
 
   async deleteCompanyDocument(companyId: string, docId: string) {
-    const doc = await this.prisma.companyDocument.findFirst({
+    const doc = await this.prisma.companyFile.findFirst({
       where: { id: docId, companyId },
     })
     if (!doc) {
       throw new NotFoundException('Документ не найден')
     }
     // Delete file
-    const filePath = path.join(process.cwd(), 'uploads', 'company-docs', companyId, doc.filename)
+    const filePath = path.join(process.cwd(), 'uploads', 'company-docs', companyId, doc.fileName)
     try { fs.unlinkSync(filePath) } catch {}
     // Delete from DB
-    await this.prisma.companyDocument.delete({ where: { id: docId } })
+    await this.prisma.companyFile.delete({ where: { id: docId } })
     return { deleted: true }
   }
 

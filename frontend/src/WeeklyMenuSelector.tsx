@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { sortCategoryEntries } from './categoryOrder'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 
 interface Dish {
   id: string
@@ -441,7 +440,7 @@ export default function WeeklyMenuSelector({ token, mode = 'planning' }: { token
                         return (
                           <div key={`${dayKey}-${item.dish.name}-${index}`} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: 12, borderRadius: 14, background: '#fff', border: '1px solid #f1e5db', flexWrap: 'wrap' }}>
                             <div style={{ width: 76, height: 76, borderRadius: 14, overflow: 'hidden', background: '#f6f6f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
-                              {item.dish.photoUrl ? <img src={mediaUrl(item.dish.photoUrl)} alt={item.dish.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#aaa', fontSize: 11 }}>Фото</span>}
+                              {item.dish.photoUrl ? <img src={MEDIA_URL(item.dish.photoUrl)} alt={item.dish.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#aaa', fontSize: 11 }}>Фото</span>}
                             </div>
                             <div style={{ flex: 1, minWidth: 180 }}>
                               <div style={{ fontWeight: 700 }}>{item.dish.name}</div>
@@ -599,7 +598,7 @@ export default function WeeklyMenuSelector({ token, mode = 'planning' }: { token
                             >
                               <input type="checkbox" checked={selected} readOnly style={{ marginRight: 12 }} />
                               <div style={{ width: 88, height: 88, borderRadius: 14, overflow: 'hidden', background: '#f6f6f6', border: selected ? '2px solid rgba(25, 135, 84, 0.25)' : '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 auto' }}>
-                                {dish.photoUrl ? <img src={mediaUrl(dish.photoUrl)} alt={dish.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center', transform: 'scale(1.08)' }} /> : <span style={{ color: '#aaa', fontSize: 11 }}>Фото</span>}
+                                {dish.photoUrl ? <img src={MEDIA_URL(dish.photoUrl)} alt={dish.name} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center', transform: 'scale(1.08)' }} /> : <span style={{ color: '#aaa', fontSize: 11 }}>Фото</span>}
                               </div>
                               <div style={{ flex: 1, minWidth: 180 }}>
                                 <div style={{ fontWeight: 700, fontSize: 16 }}>{dish.name}</div>

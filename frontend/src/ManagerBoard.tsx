@@ -2,10 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import axios from 'axios'
 import CrmMain from './crm/CrmMain'
 import { io } from 'socket.io-client'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 const SOCKET_URL = API_URL.replace(/\/api$/, '')
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 
 const companyStatusLabels: Record<string, string> = {
   ONBOARDING: 'Подключение',
@@ -775,7 +774,7 @@ export default function ManagerBoard({ token, onImpersonate }: { token: string, 
                           {chatMessage.attachments.length > 0 && (
                             <div style={{ display: 'grid', gap: 8, marginTop: chatMessage.text ? 10 : 0 }}>
                               {chatMessage.attachments.map((attachment) => (
-                                <a key={attachment.id} href={mediaUrl(attachment.fileUrl)} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fff', color: '#b53b1f', textDecoration: 'none' }}>
+                                <a key={attachment.id} href={MEDIA_URL(attachment.fileUrl)} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', padding: '8px 10px', borderRadius: 12, background: '#fff', color: '#b53b1f', textDecoration: 'none' }}>
                                   <span>{attachment.kind === 'IMAGE' ? '🖼️' : '📎'}</span>
                                   <span>{attachment.fileName}</span>
                                 </a>

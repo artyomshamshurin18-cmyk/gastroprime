@@ -46,11 +46,7 @@ export class CrmRoutesService {
         stops: {
           include: {
             company: { select: { id: true, name: true, address: true, contactPerson: true, deliveryTime: true } },
-            order: {
-              include: {
-                items: { include: { dish: { select: { id: true, name: true } } } },
-              },
-            },
+
           },
           orderBy: { sortOrder: 'asc' },
         },

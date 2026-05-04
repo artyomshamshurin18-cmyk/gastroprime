@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
+import { API_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 
 interface RouteDish {
   name: string
@@ -313,7 +313,9 @@ export default function DriverRouteManagement({ token }: { token: string }) {
                       padding: '8px 12px',
                       marginRight: 8,
                       marginTop: 4,
+                      cursor: 'pointer',
                       textDecoration: 'none',
+                      display: 'inline-block',
                     }}
                   >
                     📞

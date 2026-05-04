@@ -15,7 +15,7 @@ export class CrmProjectsService {
     return this.prisma.crmProject.findMany({
       where,
       include: {
-        _count: { select: { tasks: true, members: true } },
+        _count: { select: { members: true } },
         members: {
           include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
@@ -29,18 +29,12 @@ export class CrmProjectsService {
     const project = await this.prisma.crmProject.findUnique({
       where: { id },
       include: {
-        _count: { select: { tasks: true, members: true } },
+        _count: { select: { members: true } },
         members: {
           include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
         company: { select: { id: true, name: true } },
-        tasks: {
-          include: {
-            user: { select: { id: true, firstName: true, lastName: true, email: true } },
-            _count: { select: { comments: true, attachments: true, subTasks: true } },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
+
       },
     });
     if (!project) throw new NotFoundException('Project not found');
@@ -65,7 +59,7 @@ export class CrmProjectsService {
         endDate: data.endDate ? new Date(data.endDate) : undefined,
       },
       include: {
-        _count: { select: { tasks: true, members: true } },
+        _count: { select: { members: true } },
       },
     });
   }
@@ -89,7 +83,7 @@ export class CrmProjectsService {
       where: { id },
       data: updateData,
       include: {
-        _count: { select: { tasks: true, members: true } },
+        _count: { select: { members: true } },
         members: {
           include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
@@ -104,7 +98,7 @@ export class CrmProjectsService {
       where: { id },
       data: { status: 'ARCHIVED' },
       include: {
-        _count: { select: { tasks: true, members: true } },
+        _count: { select: { members: true } },
         members: {
           include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
@@ -119,7 +113,7 @@ export class CrmProjectsService {
       where: { id },
       data: { status: 'COMPLETED' },
       include: {
-        _count: { select: { tasks: true, members: true } },
+        _count: { select: { members: true } },
         members: {
           include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },
@@ -134,7 +128,7 @@ async restore(user: any, id: string) {
       where: { id },
       data: { status: "ACTIVE" },
       include: {
-        _count: { select: { tasks: true, members: true } },
+        _count: { select: { members: true } },
         members: {
           include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
         },

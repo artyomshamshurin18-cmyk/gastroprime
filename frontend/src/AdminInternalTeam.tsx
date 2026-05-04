@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import axios from 'axios'
+import { API_URL, MEDIA_URL } from './api-config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gastroprime.ru'
 const INTERNAL_COMPANY_NAME = 'Gastroprime'
-const mediaUrl = (value?: string) => value && value.startsWith('http') ? value : `${API_URL.replace(/\/api$/, '')}${value || ''}`
 
 const roleLabels: Record<string, string> = {
   CLIENT: 'Сотрудник',
@@ -248,7 +247,7 @@ export default function AdminInternalTeam({ token }: { token: string }) {
                     <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(0, 1fr)', gap: 18, alignItems: 'start' }}>
                       <div style={{ display: 'grid', gap: 10 }}>
                         <div style={{ width: 120, height: 120, borderRadius: 20, overflow: 'hidden', background: '#f4f4f4', border: '1px solid #ececec', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {user.avatarUrl ? <img src={mediaUrl(user.avatarUrl)} alt={user.email} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#999' }}>Аватар</span>}
+                          {user.avatarUrl ? <img src={MEDIA_URL(user.avatarUrl)} alt={user.email} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ color: '#999' }}>Аватар</span>}
                         </div>
                         <input type="file" accept="image/*" onChange={(e) => uploadAvatar(user.id, e.target.files?.[0] || null)} />
                         {avatarUploadingId === user.id && <span style={{ color: '#666', fontSize: 13 }}>Загружаю аватар...</span>}

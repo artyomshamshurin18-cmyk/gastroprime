@@ -44,10 +44,8 @@ export class CrmTasksService {
       where,
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
-        deal: { select: { id: true, stage: true, company: { select: { name: true } } } },
         company: { select: { id: true, name: true } },
-        project: { select: { id: true, name: true, color: true } },
-        _count: { select: { comments: true, checklists: true, subTasks: true } },
+        _count: { select: { comments: true, checklists: true } },
       },
       orderBy: [{ sortOrder: 'asc' }, { dueDate: 'asc' }, { priority: 'asc' }],
     });
@@ -70,8 +68,8 @@ export class CrmTasksService {
 
     // If projectId specified, check user is a member
     if (data.projectId) {
-      const membership = await this.prisma.crmProjectMember.findUnique({
-        where: { projectId_userId: { projectId: data.projectId, userId: user.userId } },
+      const membership = await this.prisma.crmProjectMember.findFirst({
+        where: { projectId: data.projectId, userId: user.userId },
       });
       if (!membership && !['SUPERADMIN', 'ADMIN'].includes(user.role)) {
         throw new ForbiddenException('Вы не участник этого проекта');
@@ -191,7 +189,6 @@ export class CrmTasksService {
       where: { taskId },
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true } },
-        attachments: true,
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -355,7 +352,7 @@ export class CrmTasksService {
       include: {
         user: { select: { id: true, firstName: true, lastName: true, email: true } },
 
-        _count: { select: { comments: true, attachments: true, subTasks: true, checklists: true } },
+        _count: { select: { comments: true, attachments: true, checklists: true } },
       },
     });
     if (!task) throw new NotFoundException('Задача не найдена');

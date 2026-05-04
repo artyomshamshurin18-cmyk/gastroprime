@@ -41,6 +41,15 @@ model User {
   createdChatInvites ChatInvite[]    @relation("ChatInviteCreator")
   guestInviteSessions ChatInviteGuest[]
   driverRoutes       DriverRoute[]
+
+  // CRM relations
+  managedDeals       CrmDeal[]           @relation("CrmDealManager")
+  dealLogs           CrmDealLog[]        @relation("CrmDealLogUser")
+  projectMemberships CrmProjectMember[]  @relation("CrmProjectMemberUser")
+  assignedTasks      CrmTask[]           @relation("CrmTaskUser")
+  taskAttachments    CrmTaskAttachment[] @relation("CrmTaskAttachmentUser")
+  taskComments       CrmTaskComment[]    @relation("CrmTaskCommentUser")
+  logisticsPoints    LogisticsPoint[]     @relation("LogisticsPointDriver")
 }
 
 model Company {
@@ -62,6 +71,7 @@ model Company {
   notes           String?
   mealPlan        String?
   workEmail       String?
+  phone           String?
   website         String?
   priceSegment    String  @default("STANDARD")
   defaultSetType  String  @default("FULL")
@@ -80,7 +90,16 @@ model Company {
   chatInvites      ChatInvite[]
   categoryPrices   CompanyCategoryPrice[]
   files            CompanyFile[]
+  companyDocuments CompanyDocument[]
   driverRouteCompanies DriverRouteCompany[]
+  logisticsPoints LogisticsPoint[] @relation("LogisticsPointCompany")
+
+  // CRM relations
+  crmDeals      CrmDeal[]      @relation("CrmDealCompany")
+  crmPayments   CrmPayment[]   @relation("CrmPaymentCompany")
+  crmProjects   CrmProject[]   @relation("CrmProjectCompany")
+  crmRouteStops CrmRouteStop[] @relation("CrmRouteStopCompany")
+  crmTasks      CrmTask[]      @relation("CrmTaskCompany")
 }
 
 model CompanyFile {
@@ -92,6 +111,21 @@ model CompanyFile {
   sizeBytes Int
   kind      String   @default("DOCUMENT")
   label     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+}
+
+model CompanyDocument {
+  id        String   @id @default(uuid())
+  companyId String
+  name      String
+  filename  String
+  size      Int
+  mimeType  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -504,5 +538,207 @@ model LogisticsPoint {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  company Company? @relation("LogisticsPointCompany", fields: [companyId], references: [id])
+  driver  User?    @relation("LogisticsPointDriver", fields: [driverId], references: [id])
+
   @@index([driverId, date])
+}
+
+// ===== CRM Models =====
+
+model CrmDeal {
+  id              String    @id @default(uuid())
+  companyId       String
+  managerId       String
+  stage           String    @default("LEAD")
+  probability     Int       @default(10)
+  nextContactDate DateTime?
+  source          String    @default("COLD")
+  notes           String?
+  estimatedAmount Int       @default(0)
+  minPrice        Int?
+  maxPrice        Int?
+  workDays        Int?
+  closedAt        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  company Company  @relation("CrmDealCompany", fields: [companyId], references: [id])
+  manager User?    @relation("CrmDealManager", fields: [managerId], references: [id])
+
+  logs CrmDealLog[]
+}
+
+model CrmDealLog {
+  id        String   @id @default(uuid())
+  dealId    String
+  userId    String
+  action    String
+  oldValue  String?
+  newValue  String?
+  comment   String?
+  createdAt DateTime @default(now())
+
+  deal CrmDeal @relation(fields: [dealId], references: [id])
+  user User?   @relation("CrmDealLogUser", fields: [userId], references: [id])
+}
+
+model CrmPayment {
+  id          String   @id @default(uuid())
+  companyId   String
+  amount      Int
+  type        String   @default("PAYMENT")
+  method      String   @default("BANK_TRANSFER")
+  description String?
+  date        DateTime @default(now())
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  company Company @relation("CrmPaymentCompany", fields: [companyId], references: [id])
+}
+
+model CrmProject {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  companyId   String?
+  dealId      String?
+  status      String    @default("ACTIVE")
+  color       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  endDate     DateTime?
+
+  company Company?           @relation("CrmProjectCompany", fields: [companyId], references: [id])
+  members CrmProjectMember[]
+}
+
+model CrmProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String   @default("MEMBER")
+  createdAt DateTime @default(now())
+
+  project CrmProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User       @relation("CrmProjectMemberUser", fields: [userId], references: [id])
+}
+
+model CrmRoute {
+  id          String    @id @default(uuid())
+  date        DateTime
+  driverName  String
+  driverPhone String?
+  vehicleInfo String?
+  totalStops  Int       @default(0)
+  totalOrders Int       @default(0)
+  totalAmount Int       @default(0)
+  status      String    @default("PLANNED")
+  notes       String?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  stops CrmRouteStop[]
+}
+
+model CrmRouteStop {
+  id          String    @id @default(uuid())
+  routeId     String
+  companyId   String
+  orderId     String?
+  sortOrder   Int       @default(0)
+  status      String    @default("PENDING")
+  deliveredAt DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  route   CrmRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  company Company  @relation("CrmRouteStopCompany", fields: [companyId], references: [id])
+}
+
+model CrmTask {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  userId      String
+  dealId      String?
+  companyId   String?
+  type        String    @default("FOLLOW_UP")
+  priority    String    @default("NORMAL")
+  status      String    @default("PENDING")
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  projectId   String?
+  sortOrder   Int       @default(0)
+  boardStatus String    @default("TODO")
+  labels      String[]  @default([])
+  parentTaskId String?
+
+  company Company? @relation("CrmTaskCompany", fields: [companyId], references: [id])
+  user    User?    @relation("CrmTaskUser", fields: [userId], references: [id])
+
+  checklists  CrmTaskChecklist[]
+  attachments CrmTaskAttachment[]
+  comments    CrmTaskComment[]
+}
+
+model CrmTaskAttachment {
+  id        String   @id @default(uuid())
+  taskId    String?
+  commentId String?
+  userId    String
+  fileName  String
+  fileUrl   String
+  mimeType  String
+  sizeBytes Int
+  createdAt DateTime @default(now())
+
+  task CrmTask? @relation(fields: [taskId], references: [id])
+  user User?    @relation("CrmTaskAttachmentUser", fields: [userId], references: [id])
+}
+
+model CrmTaskChecklist {
+  id        String   @id @default(uuid())
+  taskId    String
+  title     String
+  completed Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task  CrmTask                @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  items CrmTaskChecklistItem[]
+
+  @@index([taskId])
+}
+
+model CrmTaskChecklistItem {
+  id          String   @id @default(uuid())
+  checklistId String
+  text        String
+  completed   Boolean  @default(false)
+  assignedTo  String?
+  assignedBy  String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  checklist CrmTaskChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+}
+
+model CrmTaskComment {
+  id        String    @id @default(uuid())
+  taskId    String
+  userId    String
+  text      String
+  mentions  String[]  @default([])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  task CrmTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User?   @relation("CrmTaskCommentUser", fields: [userId], references: [id])
 }

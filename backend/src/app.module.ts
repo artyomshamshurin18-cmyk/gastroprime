@@ -13,6 +13,7 @@ import { DriverModule } from './driver/driver.module';
 import { PrismaModule } from './common/prisma.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { LogisticsModule } from './logistics/logistics.module';
+import { CrmModule } from './crm/crm.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { LogisticsModule } from './logistics/logistics.module';
     DriverModule,
     TelegramModule,
     LogisticsModule,
+    CrmModule,
   ],
 })
 export class AppModule {}
