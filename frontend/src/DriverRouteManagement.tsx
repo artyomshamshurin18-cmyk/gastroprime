@@ -303,13 +303,8 @@ export default function DriverRouteManagement({ token }: { token: string }) {
                     {statusLabels[point.status] || point.status}
                   </span>
                   <br />
-                  <button
-                    onClick={() =>
-                      window.open(
-                        `tel:${point.contactPhone}`,
-                        '_blank'
-                      )
-                    }
+                  <a
+                    href={`tel:${point.contactPhone}`}
                     style={{
                       background: '#fff7f1',
                       color: '#b53b1f',
@@ -318,11 +313,11 @@ export default function DriverRouteManagement({ token }: { token: string }) {
                       padding: '8px 12px',
                       marginRight: 8,
                       marginTop: 4,
+                      textDecoration: 'none',
                     }}
-                    title="Позвонить"
                   >
                     📞
-                  </button>
+                  </a>
                   <button
                     onClick={() =>
                       openInMaps(
