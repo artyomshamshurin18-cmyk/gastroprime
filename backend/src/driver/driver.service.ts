@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 
 @Injectable()
@@ -11,24 +11,40 @@ export class DriverService {
       throw new ForbiddenException('Укажите корректную дату');
     }
 
-    const driverRoute = await this.prisma.driverRoute.findUnique({
-      where: { driverId_date: { driverId, date: targetDate } },
-      include: {
-        companies: {
-          orderBy: { sortOrder: 'asc' },
-          include: {
-            company: true,
-          },
-        },
-      },
+    const driver = await this.prisma.user.findUnique({
+      where: { id: driverId },
+      select: { routeName: true },
     });
 
-    if (!driverRoute) {
+    if (!driver || !driver.routeName) {
       return { date, driverId, companies: [] };
     }
 
-    // Получаем DaySelection + SelectedDish данные для компаний водителя
-    const companyIds = driverRoute.companies.map((c) => c.companyId);
+    const companies = await this.prisma.company.findMany({
+      where: {
+        routeName: driver.routeName,
+        users: {
+          some: {
+            weeklyMenus: {
+              some: {
+                status: { in: ['PENDING', 'CONFIRMED', 'PREPARING', 'COMPLETED'] },
+              },
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        contactPerson: true,
+        address: true,
+        entryConditions: true,
+        routeName: true,
+        deliveryTime: true,
+      },
+    });
+
+    const companyIds = companies.map((c) => c.id);
     const selections = await this.prisma.daySelection.findMany({
       where: {
         date: targetDate,
@@ -49,17 +65,7 @@ export class DriverService {
                 email: true,
                 firstName: true,
                 phone: true,
-                company: {
-                  select: {
-                    id: true,
-                    name: true,
-                    contactPerson: true,
-                    address: true,
-                    entryConditions: true,
-                    routeName: true,
-                    deliveryTime: true,
-                  },
-                },
+                company: true,
               },
             },
           },
@@ -74,28 +80,24 @@ export class DriverService {
       },
     });
 
-    // Группируем по companyId
-    const companyDataMap = new Map<
-      string,
-      {
-        companyName: string;
-        contactPerson: string;
-        address: string;
-        entryConditions: string;
-        routeName: string;
-        deliveryTime: string;
-        dishes: Map<string, { dishName: string; categoryName: string; quantity: number }>;
-        totalPortions: number;
-        utensilsTotal: number;
-        needBreadCount: number;
-        employees: Array<{ userId: string; userName: string; email: string; dishes: Array<{ dishName: string; categoryName: string; quantity: number }> }>;
-      }
-    >();
+    const companyDataMap = new Map<string, {
+      companyName: string;
+      contactPerson: string;
+      address: string;
+      entryConditions: string;
+      routeName: string;
+      deliveryTime: string;
+      dishes: Map<string, { dishName: string; categoryName: string; quantity: number }>;
+      totalPortions: number;
+      utensilsTotal: number;
+      needBreadCount: number;
+      employees: Array<{ userId: string; userName: string; email: string; phones: string; dishes: Array<{ dishName: string; categoryName: string; quantity: number }> }>;
+    }>();
 
     for (const selection of selections) {
       const user = selection.weeklyMenu.user;
       const company = user.company;
-      const cid = company?.id || 'no-company';
+      const cid = company?.id || ('no-company-' + user.id);
 
       if (!companyDataMap.has(cid)) {
         companyDataMap.set(cid, {
@@ -137,6 +139,7 @@ export class DriverService {
           userId: user.id,
           userName: user.firstName || user.email,
           email: user.email,
+          phones: user.phone || '',
           dishes: selection.items.map((item) => ({
             dishName: item.dish.name,
             categoryName: item.dish.category?.name || 'Без категории',
@@ -159,14 +162,14 @@ export class DriverService {
       }
     }
 
-    const enrichedCompanies = driverRoute.companies.map((drc) => {
-      const cd = companyDataMap.get(drc.companyId) || {
-        companyName: drc.company.name,
-        contactPerson: drc.company.contactPerson || '',
-        address: drc.company.address || '',
-        entryConditions: (drc.company as any).entryConditions || '',
-        routeName: (drc.company as any).routeName || '',
-        deliveryTime: (drc.company as any).deliveryTime || '',
+    const enrichedCompanies = companies.map((company) => {
+      const cd = companyDataMap.get(company.id) || {
+        companyName: company.name,
+        contactPerson: company.contactPerson || '',
+        address: company.address || '',
+        entryConditions: company.entryConditions || '',
+        routeName: company.routeName || '',
+        deliveryTime: company.deliveryTime || '',
         dishes: new Map(),
         totalPortions: 0,
         utensilsTotal: 0,
@@ -175,20 +178,20 @@ export class DriverService {
       };
 
       return {
-        companyId: drc.companyId,
+        companyId: company.id,
         companyName: cd.companyName,
         contactPerson: cd.contactPerson,
         address: cd.address,
         entryConditions: cd.entryConditions,
         routeName: cd.routeName,
         deliveryTime: cd.deliveryTime,
-        deliveryStatus: drc.deliveryStatus,
-        statusChangedAt: drc.statusChangedAt,
-        arrivedAt: drc.arrivedAt,
-        unloadedAt: drc.unloadedAt,
-        departedAt: drc.departedAt,
-        driverNote: drc.driverNote,
-        sortOrder: drc.sortOrder,
+        deliveryStatus: 'PENDING',
+        statusChangedAt: null,
+        arrivedAt: null,
+        unloadedAt: null,
+        departedAt: null,
+        driverNote: '',
+        sortOrder: 0,
         dishes: Array.from(cd.dishes.values()),
         totalPortions: cd.totalPortions,
         utensilsTotal: cd.utensilsTotal,
@@ -211,19 +214,32 @@ export class DriverService {
     deliveryStatus: string,
     driverNote?: string,
   ) {
+    const driver = await this.prisma.user.findUnique({
+      where: { id: driverId },
+      select: { routeName: true },
+    });
+
+    if (!driver || !driver.routeName) {
+      throw new ForbiddenException('У вас не назначен маршрут');
+    }
+
+    const company = await this.prisma.company.findFirst({
+      where: { id: companyId, routeName: driver.routeName },
+    });
+
+    if (!company) {
+      throw new ForbiddenException('Компания не найдена в вашем маршруте');
+    }
+
     const targetDate = new Date(date);
-    const driverRoute = await this.prisma.driverRoute.findUnique({
+    let driverRoute = await this.prisma.driverRoute.findUnique({
       where: { driverId_date: { driverId, date: targetDate } },
-      include: { companies: true },
     });
 
     if (!driverRoute) {
-      throw new ForbiddenException('Маршрут не найден');
-    }
-
-    const routeCompany = driverRoute.companies.find((c) => c.companyId === companyId);
-    if (!routeCompany) {
-      throw new ForbiddenException('Компания не найдена в вашем маршруте');
+      driverRoute = await this.prisma.driverRoute.create({
+        data: { driverId, date: targetDate },
+      });
     }
 
     const now = new Date();
@@ -244,22 +260,25 @@ export class DriverService {
         updateData.arrivedAt = now;
         break;
       case 'UNLOADING':
-        if (!routeCompany.arrivedAt) updateData.arrivedAt = now;
-        break;
-      case 'UNLOADED':
-        if (!routeCompany.arrivedAt) updateData.arrivedAt = now;
-        if (!routeCompany.unloadedAt) updateData.unloadedAt = now;
+        updateData.arrivedAt = now;
         break;
       case 'COMPLETED':
-        if (!routeCompany.arrivedAt) updateData.arrivedAt = now;
-        if (!routeCompany.unloadedAt) updateData.unloadedAt = now;
-        if (!routeCompany.departedAt) updateData.departedAt = now;
+        updateData.arrivedAt = now;
+        updateData.unloadedAt = now;
+        updateData.departedAt = now;
         break;
     }
 
-    return this.prisma.driverRouteCompany.update({
-      where: { id: routeCompany.id },
-      data: updateData,
+    return this.prisma.driverRouteCompany.upsert({
+      where: {
+        driverRouteId_companyId: { driverRouteId: driverRoute.id, companyId },
+      },
+      create: {
+        driverRouteId: driverRoute.id,
+        companyId,
+        ...updateData,
+      },
+      update: updateData,
     });
   }
 
@@ -269,24 +288,44 @@ export class DriverService {
     date: string,
     driverNote: string,
   ) {
-    const targetDate = new Date(date);
-    const driverRoute = await this.prisma.driverRoute.findUnique({
-      where: { driverId_date: { driverId, date: targetDate } },
-      include: { companies: true },
+    const driver = await this.prisma.user.findUnique({
+      where: { id: driverId },
+      select: { routeName: true },
     });
 
-    if (!driverRoute) {
-      throw new ForbiddenException('Маршрут не найден');
+    if (!driver || !driver.routeName) {
+      throw new ForbiddenException('У вас не назначен маршрут');
     }
 
-    const routeCompany = driverRoute.companies.find((c) => c.companyId === companyId);
-    if (!routeCompany) {
+    const company = await this.prisma.company.findFirst({
+      where: { id: companyId, routeName: driver.routeName },
+    });
+
+    if (!company) {
       throw new ForbiddenException('Компания не найдена в вашем маршруте');
     }
 
-    return this.prisma.driverRouteCompany.update({
-      where: { id: routeCompany.id },
-      data: { driverNote },
+    const targetDate = new Date(date);
+    let driverRoute = await this.prisma.driverRoute.findUnique({
+      where: { driverId_date: { driverId, date: targetDate } },
+    });
+
+    if (!driverRoute) {
+      driverRoute = await this.prisma.driverRoute.create({
+        data: { driverId, date: targetDate },
+      });
+    }
+
+    return this.prisma.driverRouteCompany.upsert({
+      where: {
+        driverRouteId_companyId: { driverRouteId: driverRoute.id, companyId },
+      },
+      create: {
+        driverRouteId: driverRoute.id,
+        companyId,
+        driverNote,
+      },
+      update: { driverNote },
     });
   }
 
@@ -296,14 +335,12 @@ export class DriverService {
       throw new ForbiddenException('Укажите корректную дату');
     }
 
-    const driverRoute = await this.prisma.driverRoute.findUnique({
-      where: { driverId_date: { driverId, date: targetDate } },
-      include: {
-        companies: { select: { companyId: true } },
-      },
+    const driver = await this.prisma.user.findUnique({
+      where: { id: driverId },
+      select: { routeName: true },
     });
 
-    if (!driverRoute) {
+    if (!driver || !driver.routeName) {
       return {
         date,
         statuses: [],
@@ -314,7 +351,12 @@ export class DriverService {
       };
     }
 
-    const companyIds = driverRoute.companies.map((c) => c.companyId);
+    const companies = await this.prisma.company.findMany({
+      where: { routeName: driver.routeName },
+      select: { id: true, name: true, contactPerson: true, address: true, entryConditions: true, routeName: true, deliveryTime: true },
+    });
+
+    const companyIds = companies.map((c) => c.id);
     const statusList = (statuses || 'PENDING,CONFIRMED,PREPARING,COMPLETED')
       .split(',')
       .map((s) => s.trim().toUpperCase())
@@ -341,17 +383,7 @@ export class DriverService {
                 firstName: true,
                 phone: true,
                 lastName: true,
-                company: {
-                  select: {
-                    id: true,
-                    name: true,
-                    contactPerson: true,
-                    address: true,
-                    entryConditions: true,
-                    routeName: true,
-                    deliveryTime: true,
-                  },
-                },
+                company: true,
               },
             },
           },
@@ -376,7 +408,7 @@ export class DriverService {
     selections.forEach((selection) => {
       const user = selection.weeklyMenu.user;
       const company = user.company;
-      const companyKey = company?.id || `no-company-${user.id}`;
+      const companyKey = company?.id || ('no-company-' + user.id);
       const companyName = company?.name || 'Без компании';
       const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
       const selectionPortions = selection.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -390,7 +422,7 @@ export class DriverService {
 
       if (!byCompany.has(companyKey)) {
         byCompany.set(companyKey, {
-          companyId: company?.id || null,
+          companyId: company?.id || '',
           companyName,
           contactPerson: company?.contactPerson || '',
           address: company?.address || '',
@@ -401,45 +433,37 @@ export class DriverService {
           totalPortions: 0,
           utensilsTotal: 0,
           needBreadCount: 0,
-          dishesMap: new Map<string, any>(),
-          users: [],
+          dishesMap: new Map<string, { dishName: string; categoryName: string; quantity: number }>(),
+          users: new Map<string, { userId: string; userName: string; email: string; phone: string; dishes: Array<{ dishName: string; categoryName: string; quantity: number }> }>(),
         });
       }
 
-      const companyEntry = byCompany.get(companyKey);
-      companyEntry.selectionsCount += 1;
-      companyEntry.totalPortions += selectionPortions;
-      companyEntry.utensilsTotal += selection.utensils || 0;
-      if (selection.needBread) companyEntry.needBreadCount += 1;
-      companyEntry.users.push({
-        userId: user.id,
-        userName,
-        email: user.email,
-        phone: user.phone || '',
-        status: selection.weeklyMenu.status,
-        utensils: selection.utensils,
-        needBread: selection.needBread,
-        notes: selection.notes || '',
-        items: selection.items.map((item) => ({
-          dishName: item.dish.name,
-          categoryName: item.dish.category?.name || 'Без категории',
-          quantity: item.quantity,
-        })),
-      });
+      const ce = byCompany.get(companyKey);
+      ce.selectionsCount += 1;
+      ce.totalPortions += selectionPortions;
+      ce.utensilsTotal += selection.utensils || 0;
+      if (selection.needBread) ce.needBreadCount += 1;
 
+      if (!ce.users.has(user.id)) {
+        ce.users.set(user.id, {
+          userId: user.id,
+          userName,
+          email: user.email,
+          phone: user.phone || '',
+          dishes: [],
+        });
+      }
+
+      const userEntry = ce.users.get(user.id);
       selection.items.forEach((item) => {
-        const dishKey = item.dishId;
+        const dishKey = (item.dish.category?.name || '') + '|' + item.dish.name;
         if (!byDish.has(dishKey)) {
           byDish.set(dishKey, {
-            dishId: item.dishId,
             dishName: item.dish.name,
             categoryName: item.dish.category?.name || 'Без категории',
-            weight: item.dish.weight,
-            measureUnit: item.dish.measureUnit,
+            measureUnit: item.dish.measureUnit || 'шт.',
             totalQuantity: 0,
             productionAmount: 0,
-            productionUnitLabel: '',
-            portionUnitLabel: '',
             companies: new Map<string, number>(),
           });
         }
@@ -447,6 +471,27 @@ export class DriverService {
         dishEntry.totalQuantity += item.quantity;
         const prevQty = dishEntry.companies.get(companyName) || 0;
         dishEntry.companies.set(companyName, prevQty + item.quantity);
+
+        const dKey = (item.dish.category?.name || '') + '|' + item.dish.name;
+        if (!ce.dishesMap.has(dKey)) {
+          ce.dishesMap.set(dKey, {
+            dishName: item.dish.name,
+            categoryName: item.dish.category?.name || 'Без категории',
+            quantity: 0,
+          });
+        }
+        ce.dishesMap.get(dKey)!.quantity += item.quantity;
+
+        const existingUserDish = userEntry.dishes.find((d) => d.dishName === item.dish.name);
+        if (existingUserDish) {
+          existingUserDish.quantity += item.quantity;
+        } else {
+          userEntry.dishes.push({
+            dishName: item.dish.name,
+            categoryName: item.dish.category?.name || 'Без категории',
+            quantity: item.quantity,
+          });
+        }
       });
     });
 
@@ -463,7 +508,7 @@ export class DriverService {
       utensilsTotal: companyEntry.utensilsTotal,
       needBreadCount: companyEntry.needBreadCount,
       dishes: Array.from(companyEntry.dishesMap.values()),
-      users: companyEntry.users,
+      users: Array.from(companyEntry.users.values()),
     });
 
     return {
@@ -485,5 +530,80 @@ export class DriverService {
       companies: Array.from(byCompany.values()).map(formatCompanies),
       notes,
     };
+  }
+
+  async getOrCreateDriverChat(driverId: string) {
+    const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
+    if (!driver) throw new NotFoundException('Водитель не найден');
+
+    let conversation = await this.prisma.chatConversation.findFirst({
+      where: {
+        participants: {
+          some: { userId: driverId }
+        }
+      },
+      include: {
+        participants: {
+          include: { sender: { select: { id: true, email: true, firstName: true, role: true } } }
+        },
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            sender: { select: { id: true, email: true, firstName: true, role: true } },
+            attachments: true
+          }
+        }
+      }
+    });
+
+    if (!conversation) {
+      conversation = await this.prisma.chatConversation.create({
+        data: {
+          participants: {
+            create: { userId: driverId }
+          }
+        },
+        include: {
+          participants: {
+            include: { sender: { select: { id: true, email: true, firstName: true, role: true } } }
+          },
+          messages: {
+            orderBy: { createdAt: 'asc' },
+            include: {
+              sender: { select: { id: true, email: true, firstName: true, role: true } },
+              attachments: true
+            }
+          }
+        }
+      });
+    }
+
+    return { conversation };
+  }
+
+  async sendDriverChatMessage(driverId: string, text: string) {
+    if (!text.trim()) throw new BadRequestException('Текст сообщения не может быть пустым');
+
+    let conv = await this.prisma.chatConversation.findFirst({
+      where: {
+        participants: { some: { userId: driverId } }
+      }
+    });
+
+    if (!conv) {
+      conv = await this.prisma.chatConversation.create({
+        data: { participants: { create: { userId: driverId } } }
+      });
+    }
+
+    await this.prisma.chatMessage.create({
+      data: {
+        conversationId: conv.id,
+        senderId: driverId,
+        text: text.trim()
+      }
+    });
+
+    return this.getOrCreateDriverChat(driverId);
   }
 }

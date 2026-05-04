@@ -11,6 +11,8 @@ import { DailyMenuModule } from './daily-menu/daily-menu.module';
 import { WeeklyMenuModule } from './weekly-menu/weekly-menu.module';
 import { DriverModule } from './driver/driver.module';
 import { PrismaModule } from './common/prisma.module';
+import { TelegramModule } from './telegram/telegram.module';
+import { LogisticsModule } from './logistics/logistics.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { PrismaModule } from './common/prisma.module';
     DailyMenuModule,
     WeeklyMenuModule,
     DriverModule,
+    TelegramModule,
+    LogisticsModule,
   ],
 })
 export class AppModule {}

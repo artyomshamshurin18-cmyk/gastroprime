@@ -10,6 +10,7 @@ const roleLabels: Record<string, string> = {
   MANAGER: 'Менеджер',
   ADMIN: 'Администратор',
   SUPERADMIN: 'Суперадминистратор',
+  DRIVER: 'Водитель',
 }
 
 const userStatusLabels: Record<string, string> = {
@@ -47,6 +48,7 @@ interface UserDraft {
   status: string
   role: string
   companyId: string
+  routeName: string
 }
 
 interface UserImportRow {
@@ -82,6 +84,7 @@ const emptyCreateForm = {
   status: 'ACTIVE',
   role: 'CLIENT',
   companyId: '',
+  routeName: '',
 }
 
 export default function AdminUsers({ token, currentUser }: { token: string, currentUser?: any }) {
@@ -101,7 +104,7 @@ export default function AdminUsers({ token, currentUser }: { token: string, curr
   const [importPreview, setImportPreview] = useState<UserImportPreview | null>(null)
   const canManageAdminRoles = currentUser?.role !== 'MANAGER'
   const roleOptions = canManageAdminRoles
-    ? ['CLIENT', 'MASTER_CLIENT', 'MANAGER', 'CRM_OPERATOR', 'ADMIN', 'SUPERADMIN']
+    ? ['CLIENT', 'MASTER_CLIENT', 'MANAGER', 'CRM_OPERATOR', 'ADMIN', 'SUPERADMIN', 'DRIVER']
     : ['CLIENT', 'MASTER_CLIENT']
 
   const loadData = async () => {
@@ -124,12 +127,14 @@ export default function AdminUsers({ token, currentUser }: { token: string, curr
           status: user.status || 'ACTIVE',
           role: user.role || 'CLIENT',
           companyId: user.companyId || user.company?.id || '',
+          routeName: user.routeName || '',
         }
       ])))
 
       setCreateForm(prev => ({
         ...prev,
         companyId: prev.companyId || companiesResponse.data[0]?.id || '',
+        routeName: prev.routeName || '',
       }))
     } catch (err) {
       console.error(err)
@@ -154,7 +159,7 @@ export default function AdminUsers({ token, currentUser }: { token: string, curr
   }
 
   const createUser = async () => {
-    if (!createForm.email || !createForm.password || !createForm.companyId) {
+    if (!createForm.email || !createForm.password || !createForm.companyId || (createForm.role === 'DRIVER' && !createForm.routeName)) {
       setMessage('❌ Для создания пользователя нужны email, пароль и компания')
       return
     }
@@ -361,6 +366,13 @@ export default function AdminUsers({ token, currentUser }: { token: string, curr
             <option value="">Выбери компанию</option>
             {companies.map(company => <option key={company.id} value={company.id}>{company.name}</option>)}
           </select>
+          {createForm.role === 'DRIVER' && (
+            <div style={{ marginTop: 8 }}>
+              <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Рейс (номер маршрута)</div>
+              <input type="number" value={createForm.routeName} onChange={(e) => setCreateForm(prev => ({ ...prev, routeName: e.target.value }))}
+                placeholder="1" style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
+            </div>
+          )}
         </div>
 
         <button onClick={createUser} disabled={creating} style={{ marginTop: 15, background: '#28a745', color: 'white', border: 'none', borderRadius: 6, padding: '10px 18px' }}>
@@ -396,6 +408,13 @@ export default function AdminUsers({ token, currentUser }: { token: string, curr
                 <select value={draft.role} onChange={(e) => updateDraft(user.id, 'role', e.target.value)}>
                   {roleOptions.map((role) => <option key={role} value={role}>{roleLabels[role] || role}</option>)}
                 </select>
+                {draft.role === 'DRIVER' && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>Рейс</div>
+                    <input type="number" value={draft.routeName || ''} onChange={(e) => updateDraft(user.id, 'routeName', e.target.value)}
+                      placeholder="1" style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ddd' }} />
+                  </div>
+                )}
                 <select value={draft.companyId} onChange={(e) => updateDraft(user.id, 'companyId', e.target.value)}>
                   <option value="">Без компании</option>
                   {companies.map(company => <option key={company.id} value={company.id}>{company.name}</option>)}

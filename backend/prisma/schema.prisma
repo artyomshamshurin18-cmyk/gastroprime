@@ -26,6 +26,7 @@ model User {
   isVip     Boolean  @default(false)
   avoidGarlic Boolean @default(false)
   avoidMayonnaise Boolean @default(false)
+  routeName       String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -48,12 +49,14 @@ model Company {
   name            String
   status          String  @default("ACTIVE")
   contactPerson   String?
+  creditBalance   Int     @default(0)
+  contactPhone    String?
+  routeName       String?
   address         String?
   logoUrl         String?
   billingAddress  String?
   billingDetails  String?
   entryConditions String?
-  routeName       String?
   deliveryTime    String?
   peopleCount     Int?
   notes           String?
@@ -152,7 +155,8 @@ model Dish {
   updatedAt   DateTime @updatedAt
 
   orderItems     OrderItem[]
-  dailyMenuItems DailyMenuItem[]
+  dailyMenuItems DailyMenuItem[] @relation("dish_items")
+  garnishMenuItems DailyMenuItem[] @relation("garnish_items")
   selectedDishes SelectedDish[]
 }
 
@@ -173,9 +177,12 @@ model DailyMenuItem {
   dishId      String
   maxQuantity Int    @default(100)
   sortOrder   Int    @default(0)
+  garnishDishId String?
+  garnishDish Dish? @relation("garnish_items", fields: [garnishDishId], references: [id])
   
   dailyMenu   DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
-  dish        Dish      @relation(fields: [dishId], references: [id])
+  dish        Dish      @relation("dish_items", fields: [dishId], references: [id])
+
 
   @@unique([dailyMenuId, dishId])
 }
@@ -466,6 +473,7 @@ model DriverRouteCompany {
   departedAt       DateTime?
   driverNote       String?
   sortOrder        Int      @default(0)
+  garnishDishId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -474,4 +482,27 @@ model DriverRouteCompany {
 
   @@unique([driverRouteId, companyId])
   @@index([driverRouteId, sortOrder])
+}
+
+model LogisticsPoint {
+  id             String   @id @default(uuid())
+  companyId      String?
+  driverId       String   @map("driverId")
+  routeName      String?
+  date           DateTime
+  type           String   @default("point")
+  address        String?
+  contactPerson  String?
+  contactPhone   String?
+  timeWindowStart String?
+  timeWindowEnd  String?
+  note           String?
+  fileUrl        String?
+  sortOrder      Int      @default(0)
+  garnishDishId String?
+  status         String   @default("pending")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([driverId, date])
 }

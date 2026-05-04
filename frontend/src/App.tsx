@@ -11,6 +11,8 @@ import AdminKitchenSummary from './AdminKitchenSummary'
 import AdminMenuPlanning from './AdminMenuPlanning'
 import AdminReconciliation from './AdminReconciliation'
 import AdminWeeklyMenus from './AdminWeeklyMenus'
+import AdminLogistics from './AdminLogistics'
+import CrmMain from './crm/CrmMain'
 import CompanyAnalytics from './CompanyAnalytics'
 import ClientCompanyDashboard from './ClientCompanyDashboard'
 import ClientCompanyRequests from './ClientCompanyRequests'
@@ -249,7 +251,7 @@ function ClientDashboard({ user, token, onLogout, onUserUpdate, impersonatorUser
 }
 
 function AdminDashboard({ user, token, onLogout }: { user: any, token: string, onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'companies' | 'team' | 'reconciliation' | 'invoices' | 'categories' | 'dishes' | 'users' | 'planning' | 'client-plans' | 'kitchen'>('analytics')
+  const [activeTab, setActiveTab] = useState<'analytics' | 'companies' | 'team' | 'reconciliation' | 'invoices' | 'categories' | 'dishes' | 'users' | 'planning' | 'client-plans' | 'crm' | 'logistics' | 'kitchen'>('analytics')
   return (
     <div className="gp-shell">
       <div className="gp-header">
@@ -272,6 +274,8 @@ function AdminDashboard({ user, token, onLogout }: { user: any, token: string, o
         <div onClick={() => setActiveTab('users')} className={`gp-tab ${activeTab === 'users' ? 'gp-tab--active' : ''}`}>👥 Пользователи</div>
         <div onClick={() => setActiveTab('planning')} className={`gp-tab ${activeTab === 'planning' ? 'gp-tab--active' : ''}`}>📅 Планирование</div>
         <div onClick={() => setActiveTab('client-plans')} className={`gp-tab ${activeTab === 'client-plans' ? 'gp-tab--active' : ''}`}>📋 Заявки</div>
+        <div onClick={() => setActiveTab('crm')} className={`gp-tab ${activeTab === 'crm' ? 'gp-tab--active' : ''}`}>📋 CRM</div>
+        <div onClick={() => setActiveTab('logistics')} className={`gp-tab ${activeTab === 'logistics' ? 'gp-tab--active' : ''}`}>🚚 Логистика</div>
         <div onClick={() => setActiveTab('kitchen')} className={`gp-tab ${activeTab === 'kitchen' ? 'gp-tab--active' : ''}`}>🍲 Сводка</div>
       </div>
       <div className="gp-content">
@@ -285,6 +289,8 @@ function AdminDashboard({ user, token, onLogout }: { user: any, token: string, o
         {activeTab === 'users' && <AdminUsers token={token} currentUser={user} />}
         {activeTab === 'planning' && <AdminMenuPlanning token={token} />}
         {activeTab === 'client-plans' && <AdminWeeklyMenus token={token} />}
+        {activeTab === 'crm' && <CrmMain token={token} userRole={user?.role} />}
+        {activeTab === 'logistics' && <AdminLogistics token={token} />}
         {activeTab === 'kitchen' && <AdminKitchenSummary token={token} />}
       </div>
     </div>
@@ -330,6 +336,8 @@ function ManagerDashboard({ user, token, onLogout, onImpersonate }: { user: any,
         {activeTab === 'invoices' && <AdminBillingInvoices token={token} />}
         {activeTab === 'categories' && <AdminCategories token={token} />}
         {activeTab === 'dishes' && <AdminDishes token={token} />}
+        {activeTab === 'crm' && <CrmMain token={token} userRole={user?.role} />}
+        {activeTab === 'logistics' && <AdminLogistics token={token} />}
         {activeTab === 'kitchen' && <AdminKitchenSummary token={token} />}
         {activeTab === 'help' && <HelpCenter role="manager" />}
       </div>

@@ -24,7 +24,7 @@ interface RouteCompany {
 
 interface RouteData {
   date: string
-  points: RouteCompany[]
+  companies: RouteCompany[]
 }
 
 const statusFlow = ['PENDING', 'EN_ROUTE', 'ARRIVED', 'UNLOADING', 'COMPLETED']
@@ -45,6 +45,24 @@ const statusColors: Record<string, string> = {
   COMPLETED: '#198754',
 }
 
+interface LogisticsPoint { id: string; type: string; address: string; contactPerson: string; contactPhone: string; timeWindowStart: string; timeWindowEnd: string; note: string; status: string; }
+
+function fmtDate(d){return d.toISOString().slice(0,10);}
+const dayLabels=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+function getWeekDates(){
+  const now=new Date(),start=new Date(now);
+  start.setDate(start.getDate()-start.getDay()+1);
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    const num=d.getDate().toString().padStart(2,'0')+'.'+(d.getMonth()+1).toString().padStart(2,'0');
+    let label=dayLabels[i]+' '+num;
+    if(d.getDate()===now.getDate()&&d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()) label+=' (сегодня)';
+    days.push({label,date:fmtDate(d)});
+  }
+  return days;
+}
+
 export default function DriverRouteManagement({ token }: { token: string }) {
   const [route, setRoute] = useState<RouteData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -52,18 +70,23 @@ export default function DriverRouteManagement({ token }: { token: string }) {
   const [updatingCompanyId, setUpdatingCompanyId] = useState<string | null>(null)
   const [notesInput, setNotesInput] = useState<Record<string, string>>({})
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({})
+  const [selectedDate, setSelectedDate] = useState(fmtDate(new Date()))
+  const weekDates = getWeekDates()
+  const [logPoints, setLogPoints] = useState<LogisticsPoint[]>([])
   const notesTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
-  const loadRoute = async () => {
+  const loadRoute = async (date: string) => {
     setLoading(true)
     setError('')
     try {
-      const response = await axios.get(`${API_URL}/driver/my-routes`, {
+      const response = await axios.get(`${API_URL}/driver/routes`, {
         headers: { Authorization: `Bearer ${token}` },
+        params: { date },
       })
       setRoute(response.data)
+      try { const lpRes = await axios.get(`${API_URL}/logistics/my-points/${date}`, { headers: { Authorization: `Bearer ${token}` } }); setLogPoints(Array.isArray(lpRes.data) ? lpRes.data : (lpRes.data?.points || [])); } catch(e) {}
       const initialNotes: Record<string, string> = {}
-      response.data.points?.forEach((p: RouteCompany) => {
+      response.data.companies?.forEach((p: RouteCompany) => {
         initialNotes[p.companyId] = p.notes || ''
       })
       setNotesInput(initialNotes)
@@ -75,8 +98,8 @@ export default function DriverRouteManagement({ token }: { token: string }) {
   }
 
   useEffect(() => {
-    loadRoute()
-  }, [])
+    loadRoute(selectedDate)
+  }, [selectedDate])
 
   const advanceStatus = async (companyId: string, currentStatus: string) => {
     const currentIndex = statusFlow.indexOf(currentStatus)
@@ -94,7 +117,7 @@ export default function DriverRouteManagement({ token }: { token: string }) {
         if (!prev) return prev
         return {
           ...prev,
-          points: prev.points.map((p) =>
+          points: prev.companies.map((p) =>
             p.companyId === companyId ? { ...p, status: nextStatus } : p
           ),
         }
@@ -137,26 +160,37 @@ export default function DriverRouteManagement({ token }: { token: string }) {
     if (lat && lng) {
       window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank')
     } else {
-      window.open(
-        `https://www.google.com/maps/search/${encodeURIComponent(address)}`,
-        '_blank'
-      )
+      window.open(`https://yandex.ru/maps/?text=${encodeURIComponent(address)}`,'_blank')
     }
   }
 
-  const today = new Date().toLocaleDateString('ru-RU', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-
   return (
     <div>
-      <h2>📍 Маршрут на сегодня</h2>
-      <p style={{ color: '#666', marginTop: -5, marginBottom: 18 }}>
-        {today}
-      </p>
+      <h2>Мой маршрут</h2>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 12 }}>
+        {weekDates.map((d) => (
+          <button key={d.date} onClick={() => setSelectedDate(d.date)} style={{ padding: '5px 10px', borderRadius: 8, border: '1px solid', background: selectedDate === d.date ? '#b53b1f' : 'white', color: selectedDate === d.date ? 'white' : '#b53b1f', borderColor: '#b53b1f', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>{d.label}</button>
+        ))}
+      </div>
+
+      {logPoints.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Дополнительные точки</h3>
+          {logPoints.map((lp) => (
+            <div key={lp.id} style={{ background: '#fff', borderRadius: 8, padding: 12, marginBottom: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>{lp.type === 'pickup' ? '🚚 Забор' : lp.type === 'tasting' ? '👅 Дегустация' : lp.type === 'custom' ? '📌 Доп. точка' : '📦 Другое'}</div>
+              <div style={{ color: '#333', fontSize: 13 }}>{lp.address}</div>
+              {lp.contactPerson && <div style={{ color: '#666', fontSize: 12 }}>👤 {lp.contactPerson}</div>}
+              {lp.contactPhone && <div style={{ color: '#666', fontSize: 12 }}>📞 {lp.contactPhone}</div>}
+              {lp.note && <div style={{ background: '#fff3cd', color: '#856404', borderRadius: 4, padding: '4px 8px', marginTop: 6, fontSize: 12 }}>📝 {lp.note}</div>}
+              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                <button onClick={async () => { try { await axios.patch(`${API_URL}/logistics/points/${lp.id}/status`, { status: 'done' }, { headers: { Authorization: `Bearer ${token}` } }); const lp2 = await axios.get(`${API_URL}/logistics/my-points/${selectedDate}`, { headers: { Authorization: `Bearer ${token}` } }); setLogPoints(Array.isArray(lp2.data) ? lp2.data : (lp2.data?.points || [])); } catch(e) {} }} style={{ background: lp.status === 'done' ? '#198754' : '#e9ecef', color: lp.status === 'done' ? 'white' : '#333', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, cursor: 'pointer' }}>✓ Сделано</button>
+                <button onClick={async () => { try { await axios.patch(`${API_URL}/logistics/points/${lp.id}/status`, { status: 'skipped' }, { headers: { Authorization: `Bearer ${token}` } }); const lp2 = await axios.get(`${API_URL}/logistics/my-points/${selectedDate}`, { headers: { Authorization: `Bearer ${token}` } }); setLogPoints(Array.isArray(lp2.data) ? lp2.data : (lp2.data?.points || [])); } catch(e) {} }} style={{ background: lp.status === 'skipped' ? '#dc3545' : '#e9ecef', color: lp.status === 'skipped' ? 'white' : '#333', border: 'none', borderRadius: 6, padding: '5px 10px', fontSize: 12, cursor: 'pointer' }}>✕ Пропустить</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {error && (
         <div
@@ -174,7 +208,7 @@ export default function DriverRouteManagement({ token }: { token: string }) {
 
       {loading && <div style={{ color: '#666' }}>Загрузка маршрута...</div>}
 
-      {!loading && route && route.points?.length === 0 && (
+      {!loading && route && route.companies?.length === 0 && (
         <div
           className="gp-soft-block"
           style={{ textAlign: 'center', padding: 48 }}
@@ -185,7 +219,7 @@ export default function DriverRouteManagement({ token }: { token: string }) {
       )}
 
       {!loading &&
-        route?.points?.map((point, idx) => {
+        route?.companies?.map((point, idx) => {
           const statusIndex = statusFlow.indexOf(point.status)
           const isLast = statusIndex >= statusFlow.length - 1
           const nextLabel = isLast

@@ -11,6 +11,7 @@ const roleLabels: Record<string, string> = {
   MANAGER: 'Менеджер',
   ADMIN: 'Администратор',
   SUPERADMIN: 'Суперадминистратор',
+  DRIVER: 'Водитель',
 }
 
 const userStatusLabels: Record<string, string> = {

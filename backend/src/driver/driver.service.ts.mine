@@ -1,0 +1,149 @@
+import { Injectable, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../common/prisma.service';
+
+@Injectable()
+export class DriverService {
+  constructor(private prisma: PrismaService) {}
+
+  async getRoutes(driverId: string, date: string) {
+    const targetDate = new Date(date);
+    if (!date || Number.isNaN(targetDate.getTime())) {
+      throw new ForbiddenException('Укажите корректную дату');
+    }
+
+    const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
+    if (!driver || !driver.routeName) {
+      return { date, driverId, companies: [] };
+    }
+
+    const routeName = driver.routeName;
+
+    const selections = await this.prisma.daySelection.findMany({
+      where: {
+        date: targetDate,
+        weeklyMenu: {
+          user: { company: { routeName } },
+          status: { in: ['PENDING', 'CONFIRMED', 'PREPARING', 'COMPLETED'] },
+        },
+      },
+      include: {
+        weeklyMenu: {
+          select: {
+            status: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                phone: true,
+                company: {
+                  select: {
+                    id: true,
+                    name: true,
+                    contactPerson: true,
+                    address: true,
+                    entryConditions: true,
+                    routeName: true,
+                    deliveryTime: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        items: {
+          include: {
+            dish: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                price: true,
+                weight: true,
+                measureUnit: true,
+                photoUrl: true,
+                calories: true,
+                containsPork: true,
+                containsGarlic: true,
+                containsMayonnaise: true,
+                breakfastPart: true,
+                category: { select: { id: true, name: true, sortOrder: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const companyDataMap: Record<string, any> = {};
+    for (const sel of selections) {
+      const company = sel.weeklyMenu.user.company;
+      const companyId = company.id;
+      if (!companyDataMap[companyId]) {
+        companyDataMap[companyId] = {
+          id: companyId,
+          name: company.name,
+          routeName: company.routeName,
+          contactPerson: company.contactPerson,
+          address: company.address,
+          entryConditions: company.entryConditions,
+          deliveryTime: company.deliveryTime,
+          weeklyMenu: { status: sel.weeklyMenu.status },
+          dishes: [],
+        };
+      }
+      for (const sd of sel.items) {
+        if (sd.dish) {
+          companyDataMap[companyId].dishes.push({
+            id: sd.id,
+            dishId: sd.dishId,
+            name: sd.dish.name,
+            description: sd.dish.description,
+            price: sd.dish.price,
+            weight: sd.dish.weight,
+            measureUnit: sd.dish.measureUnit,
+            photoUrl: sd.dish.photoUrl,
+            calories: sd.dish.calories,
+            containsPork: sd.dish.containsPork,
+            containsGarlic: sd.dish.containsGarlic,
+            containsMayonnaise: sd.dish.containsMayonnaise,
+            breakfastPart: sd.dish.breakfastPart,
+            quantity: sd.quantity,
+            category: sd.dish.category
+              ? { id: sd.dish.category.id, name: sd.dish.category.name, sortOrder: sd.dish.category.sortOrder }
+              : null,
+          });
+        }
+      }
+    }
+
+    const enrichedCompanies = Object.values(companyDataMap);
+    enrichedCompanies.forEach((company: any) => {
+      company.dishes.sort((a: any, b: any) => {
+        const catA = a.category?.sortOrder ?? 999;
+        const catB = b.category?.sortOrder ?? 999;
+        if (catA !== catB) return catA - catB;
+        return (a.breakfastPart || '').localeCompare(b.breakfastPart || '', 'ru');
+      });
+    });
+
+    return { date, driverId, companies: enrichedCompanies };
+  }
+
+    const driver = await this.prisma.user.findUnique({ where: { id: driverId } });
+    if (!driver || !driver.routeName) throw new ForbiddenException('Водитель не найден');
+
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
+    if (!company || company.routeName !== driver.routeName) {
+      throw new ForbiddenException('Компания не в вашем маршруте');
+    }
+
+    return this.prisma.driverRouteCompany.upsert({
+      where: { driverId_companyId_date: { driverId, companyId, date: new Date(date) } },
+      create: { driverId, companyId, date: new Date(date), note },
+      update: { note },
+    });
+  }
+}
