@@ -22,6 +22,7 @@ export class LogisticsService {
   }
 
   async getDriverPoints(driverId: string, date: string) {
+    console.log('[DEB_LOG] getDriverPoints driverId=' + (driverId||'?').slice(0,8) + ' date=' + date);
     const targetDate = new Date(date);
     if (!date || Number.isNaN(targetDate.getTime())) {
       return { driverId, date, points: [] };
