@@ -1231,7 +1231,8 @@ export class UsersService {
     };
 
     const ensureWeeklyMenuForDate = async (userId: string, items: { dishId: string; quantity: number }[]) => {
-      const existingWeeklyMenu = await this.prisma.weeklyMenu.findFirst({
+      console.log("[DEB] ensureWM userId=" + userId + " date=" + targetDate.toISOString().slice(0,10));
+    const existingWeeklyMenu = await this.prisma.weeklyMenu.findFirst({
         where: {
           userId,
           startDate: { lte: targetDate },
@@ -1395,6 +1396,9 @@ export class UsersService {
   }
 
   async createCompanyRequest(coordinatorUserId: string, data: { date?: string }) {
+    console.log("[DEB2] createCompanyRequest userId=" + coordinatorUserId + " date=" + (data.date || "?"));
+    const allB4 = await this.prisma.daySelection.count();
+    console.log("[DEB2] total DS before: " + allB4);
     const context = await this.getCoordinatorContext(coordinatorUserId);
     this.ensureCompanyStatusAllowed(context.company?.status, ['ACTIVE'], 'Создание заявки доступно только активной компании');
     const targetDate = this.parseDate(data.date);
@@ -1516,6 +1520,7 @@ export class UsersService {
       }
     }
 
+    console.log("[DEB] setSelection emp=" + employeeId + " date=" + targetDate.toISOString().slice(0,10) + " items=" + JSON.stringify(items.map(i => i.dishId.slice(0,6) + "x" + i.quantity)));
     const existingSelection = await this.prisma.daySelection.findFirst({
       where: {
         date: targetDate,
@@ -1567,7 +1572,45 @@ export class UsersService {
       });
     }
 
-    return this.prisma.weeklyMenu.create({
+    // Не нашли точный WM — ищем ближайший по дате и расширяем его
+    const nearestWM = await this.prisma.weeklyMenu.findFirst({
+      where: {
+        userId: employeeId,
+        OR: [
+          { startDate: { lte: targetDate }, endDate: { gte: targetDate } },
+          { startDate: { lte: targetDate } },
+          { endDate: { gte: targetDate } },
+        ],
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (nearestWM) {
+      // Расширяем границы
+      const newStart = nearestWM.startDate < targetDate ? nearestWM.startDate : targetDate;
+      const newEnd = nearestWM.endDate > targetDate ? nearestWM.endDate : targetDate;
+      await this.prisma.weeklyMenu.update({
+        where: { id: nearestWM.id },
+        data: { startDate: newStart, endDate: newEnd },
+      });
+      return this.prisma.daySelection.create({
+        data: {
+          weeklyMenuId: nearestWM.id,
+          date: targetDate,
+          utensils: 1,
+          needBread: true,
+          notes: 'Выбрано координатором компании',
+          items: {
+            create: items.map(item => ({
+              dishId: item.dishId,
+              quantity: item.quantity,
+            })),
+          },
+        },
+      });
+    }
+
+      return this.prisma.weeklyMenu.create({
       data: {
         userId: employeeId,
         startDate: targetDate,

@@ -203,14 +203,30 @@ export class WeeklyMenuService {
       });
     });
 
-    // Удаляем старое меню на этот период
-    await this.prisma.weeklyMenu.deleteMany({
-      where: {
-        userId,
-        startDate,
-        endDate,
-      }
+    // Удаляем ТОЛЬКО даты, которые переданы в selections (а не весь период)
+    const selectionDates = normalizedSelections.map(s => s.date);
+    // Сначала удаляем DaySelection для этих дат
+    const existingWMs = await this.prisma.weeklyMenu.findMany({
+      where: { userId, startDate, endDate },
+      select: { id: true },
     });
+    if (existingWMs.length > 0) {
+      await this.prisma.daySelection.deleteMany({
+        where: {
+          weeklyMenuId: { in: existingWMs.map(w => w.id) },
+          date: { in: selectionDates },
+        }
+      });
+      // Удаляем пустые weeklyMenu (без selections)
+      await this.prisma.weeklyMenu.deleteMany({
+        where: {
+          userId,
+          startDate,
+          endDate,
+          selections: { none: {} }
+        }
+      });
+    }
 
     // Создаём новое
     const weeklyMenu = await this.prisma.weeklyMenu.create({
