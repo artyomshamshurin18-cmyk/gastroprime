@@ -134,7 +134,7 @@ export default function DriverRouteManagement({ token }: { token: string }) {
     try {
       await axios.patch(
         `${API_URL}/driver/routes/${companyId}/notes`,
-        { notes: notesInput[companyId] || '' },
+        { driverNote: notesInput[companyId] || '', date: selectedDate },
         { headers: { Authorization: `Bearer ${token}` } }
       )
     } catch (err: any) {
@@ -512,6 +512,9 @@ export default function DriverRouteManagement({ token }: { token: string }) {
                     rows={2}
                     style={{ flex: 1, resize: 'vertical' }}
                   />
+                  <button onClick={() => saveNotes(point.companyId)} disabled={savingNotes[point.companyId]} style={{ background: '#0d6efd', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 12px', fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap', alignSelf: 'flex-start' }}>
+                    {savingNotes[point.companyId] ? '...' : 'Сохранить'}
+                  </button>
                 </div>
                 {savingNotes[point.companyId] && (
                   <div
