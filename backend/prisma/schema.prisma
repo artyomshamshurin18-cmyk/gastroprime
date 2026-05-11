@@ -50,6 +50,8 @@ model User {
   taskAttachments    CrmTaskAttachment[] @relation("CrmTaskAttachmentUser")
   taskComments       CrmTaskComment[]    @relation("CrmTaskCommentUser")
   logisticsPoints    LogisticsPoint[]     @relation("LogisticsPointDriver")
+
+  projectMessages CrmProjectMessage[]
 }
 
 model Company {
@@ -610,7 +612,8 @@ model CrmProject {
   endDate     DateTime?
 
   company Company?           @relation("CrmProjectCompany", fields: [companyId], references: [id])
-  members CrmProjectMember[]
+  members   CrmProjectMember[]
+  messages  CrmProjectMessage[]
 }
 
 model CrmProjectMember {
@@ -741,4 +744,29 @@ model CrmTaskComment {
 
   task CrmTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User?   @relation("CrmTaskCommentUser", fields: [userId], references: [id])
+}
+
+model CrmProjectMessage {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project     CrmProject              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User?                   @relation(fields: [userId], references: [id])
+  attachments CrmProjectAttachment[]
+}
+
+model CrmProjectAttachment {
+  id        String   @id @default(uuid())
+  messageId String?
+  projectId String?
+  fileName  String
+  fileUrl   String
+  fileSize  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  message CrmProjectMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
 }

@@ -111,8 +111,8 @@ export class AdminController {
   }
 
   @Get("companies")
-  async getAllCompanies() {
-    return this.adminService.getAllCompanies()
+  async getAllCompanies(@Request() req) {
+    return this.adminService.getAllCompanies(req.user)
   }
 
   @Get("reconciliation")

@@ -64,7 +64,7 @@ export class CrmDealsService {
           select: {
             id: true, name: true, contactPerson: true, address: true,
             workEmail: true, peopleCount: true, status: true, balance: true,
-            creditBalance: true, notes: true,
+            phone: true, contactPhone: true, creditBalance: true, notes: true,
           },
         },
         manager: { select: { id: true, email: true, firstName: true, lastName: true } },
@@ -340,8 +340,11 @@ export class CrmDealsService {
   }
 
   async remove(id: string) {
+    // If already deleted, just return success (race condition / stale UI)
     const deal = await this.prisma.crmDeal.findUnique({ where: { id } });
-    if (!deal) throw new NotFoundException('Сделка не найдена');
+    if (!deal) return { success: true };
+    // Delete log entries first to avoid FK constraint violation
+    await this.prisma.crmDealLog.deleteMany({ where: { dealId: id } });
     await this.prisma.crmDeal.delete({ where: { id } });
     return { success: true };
   }

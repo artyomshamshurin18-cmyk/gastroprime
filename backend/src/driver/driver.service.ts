@@ -151,10 +151,24 @@ export class DriverService {
       employees: cd.employees,
     }));
 
+    // Добавляем точки из LogisticsPoint для этого водителя
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    const logisticsPoints = driver.routeName ? await this.prisma.logisticsPoint.findMany({
+      where: {
+        routeName: driver.routeName,
+        date: { gte: startOfDay, lte: endOfDay },
+      },
+      orderBy: { sortOrder: 'asc' },
+    }) : [];
+
     return {
       date,
       driverId,
       companies: enrichedCompanies,
+      logisticsPoints,
     };
   }
 

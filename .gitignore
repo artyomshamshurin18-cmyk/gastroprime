@@ -29,3 +29,5 @@ backend/prisma/dev.db
 /src/
 /tsconfig.json
 /vite.config.ts
+backups/
+check_mail.cjs

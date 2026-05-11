@@ -23,8 +23,13 @@ export class LogisticsService {
 
   async getDriverPoints(driverId: string, date: string) {
     const targetDate = new Date(date);
-    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+    if (!date || Number.isNaN(targetDate.getTime())) {
+      return { driverId, date, points: [] };
+    }
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
     const points = await this.prisma.logisticsPoint.findMany({
       where: {

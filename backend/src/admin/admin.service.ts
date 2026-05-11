@@ -18,6 +18,7 @@ const safeUserSelect = {
   jobTitle: true,
   phone: true,
   allergies: true,
+  routeName: true,
   avatarUrl: true,
   status: true,
   role: true,
@@ -304,9 +305,9 @@ export class AdminService {
     })
   }
 
-  async getAllCompanies() {
+  async getAllCompanies(actor?: { role?: string }) {
     return this.prisma.company.findMany({
-      where: { status: { not: 'CRM_LEAD' } },
+      where: actor?.role === 'MANAGER' ? { status: 'ACTIVE' } : { status: { not: 'CRM_LEAD' } },
       include: {
         categoryPrices: {
           include: {

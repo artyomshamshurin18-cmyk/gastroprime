@@ -142,7 +142,7 @@ export class CrmLeadsService {
               json_build_object(
                 'id', c.id, 'name', c.name, 'contactPerson', c."contactPerson",
                 'address', c.address, 'workEmail', c."workEmail",
-                'peopleCount', c."peopleCount", 'status', c.status, 'notes', c.notes
+                'peopleCount', c."peopleCount", 'phone', c.phone, 'contactPhone', c."contactPhone", 'status', c.status, 'notes', c.notes
               ) as company,
               json_build_object(
                 'id', u.id, 'email', u.email, 'firstName', u."firstName", 'lastName', u."lastName"
